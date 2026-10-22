@@ -1,0 +1,148 @@
+# Roadmap
+
+Milestones are done **in order**. Each has a goal, scope, and exit criteria.
+Versions move by Conventional Commits (see `VERSIONING.md`), so milestones aren't
+pinned to versions. The game version that completes each one is recorded here.
+Only the current milestone (and a sketch of the next) is broken into tasks in `TASKS.md`.
+
+Why this order (chosen by Claude, 85%): get pixels on screen fast (motivation +
+renderer foundation), then terrain at the target performance, then the
+client/server split *before* gameplay piles up, then creative, visuals, multiplayer,
+survival. Big-but-optional systems (LOD, modding API, Windows) come after the
+Friends Release unless Adrian reprioritizes (see `OPEN_QUESTIONS.md` Q1).
+
+| # | Milestone | Status | Completed in |
+|---|---|---|---|
+| M0 | Foundations | **in progress** (docs done) | — |
+| M1 | First Light | planned | — |
+| M2 | Terrain | planned | — |
+| M3 | Client/Server Split | planned | — |
+| M4 | Creative Mode | planned | — |
+| M5 | Living World Visuals | planned | — |
+| M6 | Multiplayer | planned | — |
+| M7 | Modern Worldgen | planned | — |
+| M8 | Survival Core | planned | — |
+| M9 | Mobs | planned | — |
+| M10 | Audio & Atmosphere | planned | — |
+| M11 | Friends Release → **1.0.0** | planned | — |
+| M12 | Far Horizons (LOD + shaders) | planned | — |
+| M13 | Modding | planned | — |
+| M14 | Windows | planned | — |
+
+---
+
+## M0 — Foundations
+**Goal:** a repo where every later task is cheap, safe, and documented.
+- Documentation set, ADRs, `/next` command *(done in v0.0.0)*
+- GitHub repo `apz98/terra` (public), CI (fmt, clippy, test, docs, check-docs)
+- Cargo workspace, pinned toolchain, lints, build profiles
+- `terra-xtask`: `bump`, `check-docs`, `ci`
+- `terra-core`: tracing/logging, crash log, profiling hooks
+- Linux system dependencies documented
+
+**Exit:** `cargo xtask ci` green locally and on GitHub; `cargo run -p terra` prints
+the version; docs and versions are checked mechanically.
+
+## M1 — First Light
+**Goal:** a window showing a textured 16³ chunk you can fly around.
+- winit window + event loop (Wayland), wgpu device/surface, resize, vsync toggle
+- Fly camera (mouse look, WASD, up/down, speed), reverse-Z projection
+- Placeholder 16×16 textures in a texture array (procedural until art is decided, Q2)
+- Naive face-culled mesh of one hardcoded section; WGSL shader; depth buffer
+- Debug overlay: fps, frame time, position, GPU adapter
+
+**Exit:** runs on the reference machine at a smooth ≥ 60 fps; baseline numbers recorded.
+
+## M2 — Terrain
+**Goal:** an endless generated world at the performance target.
+- `terra-world` chunk columns + palette sections; `terra-data` block registry from the built-in data pack
+- `terra-worldgen` heightmap terrain (2D noise), deterministic per seed
+- `terra-mesh` binary greedy meshing + per-vertex AO, packed vertices, criterion benches
+- Async generate/mesh on a worker pool; load/unload by render distance; priority by distance
+- Shared GPU buffers + indirect draws; frustum culling
+- Perf checkpoint: **60 fps @ 16 chunks** on the reference machine
+
+**Exit:** fly in any direction at sprint speed with no holes or hitches; budgets met.
+
+## M3 — Client/Server Split
+**Goal:** the architecture of the final game, single-player over an internal server.
+- `terra-net` protocol + in-memory transport; `terra-sim` 20 TPS tick on its own thread
+- Server owns world + generation; chunks streamed to the client by priority
+- Player position sync; client prediction
+- Block raycast, selection outline, break/place (creative-lite) via server
+- `bevy_ecs` introduced for entities (players first)
+- Headless integration tests: client ↔ server over the in-memory transport
+
+**Exit:** gameplay identical to M2 + block editing, all through the server.
+
+## M4 — Creative Mode
+**Goal:** a real creative game you can save.
+- AABB physics/collision; walk, sprint, jump, fly toggle
+- Hotbar, block picker, crosshair, F3 debug screen
+- Settings (render distance, FOV, sensitivity, vsync) persisted as TOML
+- `terra-storage` region files (zstd), save/load, autosave, versioned format
+- Main menu: create/load/delete worlds (seed, name)
+
+**Exit:** create a world, build, quit, reload with nothing lost. `/security-review` reminder (save parsing).
+
+## M5 — Living World Visuals
+- Sky light + block light propagation, smooth lighting
+- Day/night cycle, sky, sun/moon, stars, clouds, distance fog
+- Cutout (leaves) and translucent (water, glass) passes with sorting; biome tints
+- Basic water rendering and flowing water simulation (server)
+
+## M6 — Multiplayer
+**Goal:** friends can play together.
+- QUIC transport ([ADR 0011](adr/0011-transport-quic.md)); `terra-server` dedicated binary + `server.toml`
+- Keypair identity + TOFU, allowlist, ops ([ADR 0008](adr/0008-identity.md))
+- LAN discovery; "Open to LAN" from single-player
+- Other players rendered; entity interpolation; chat; basic commands (`/tp`, `/gamemode`, `/time`, `/kick`)
+- Bandwidth and latency testing (simulated lag/loss)
+
+**Exit:** 4+ players on a dedicated server over the internet without desync. `/security-review` **required**.
+
+## M7 — Modern Worldgen
+- 3D density terrain (1.18-style noise router), Y −64…320
+- Climate-parameter biomes, surface rules
+- Caves (cheese/spaghetti/noodle), aquifers, ores by height
+- Trees, grass, flowers; first simple structures
+- Golden tests: seed → stable hash of generated chunks
+
+## M8 — Survival Core
+- Health, hunger, fall/void damage, death/respawn
+- Mining times, tool tiers, item drops, item entities
+- Inventory UI, crafting (2×2, table 3×3), data-driven recipes
+- Furnace/smelting, chests (block entities), beds/spawn point
+
+## M9 — Mobs
+- Entity rendering (models + animation), pathfinding (A* on the block grid)
+- Passive mobs (cow, pig, sheep, chicken), hostile (zombie, skeleton, creeper, spider)
+- Spawning rules by light/biome, combat, mob drops
+
+## M10 — Audio & Atmosphere
+- `terra-audio`: block/step/mob sounds, ambient music
+- Particles, weather (rain/snow/thunder)
+- Resource pack loading, including players' own packs (local only)
+
+## M11 — Friends Release → 1.0.0
+- Linux packaging (tarball/AppImage), server setup guide, in-game crash reporter/logs
+- Performance pass on the reference machine; soak test of a multi-hour server
+- Save-format and protocol stability promise + migration tests
+- `/code-review` + `/security-review` required → **cut 1.0.0**
+
+## M12 — Far Horizons
+- LOD terrain for 32–64+ chunk view distance; GPU-driven culling
+- Quality tiers: shadows, water reflections, volumetric fog; presets
+
+## M13 — Modding
+- Public data-pack/resource-pack format docs; server-pushed packs
+- `terra-mod`: wasmtime host, WIT API, fuel/epoch limits; example mod
+- `/security-review` **required**
+
+## M14 — Windows
+- Windows build + CI matrix, packaging, input/windowing fixes
+
+## Beyond (unordered backlog)
+Nether/End dimensions · redstone · enchanting & brewing · villages/villagers ·
+NAT traversal / relay ("Open to friends") · controller support · accessibility
+options · replay/screenshot tools.
