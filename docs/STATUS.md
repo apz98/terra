@@ -8,7 +8,7 @@ _Update this file in every commit that changes progress. Keep it short._
 | **Milestone** | M1 — First Light (M0 done in 0.1.0) |
 | **Last completed** | T-0101 Window and GPU surface (0.2.0) |
 | **In progress** | — |
-| **Next up** | T-0102 frame loop, timing and input (after the `/code-review` below) |
+| **Next up** | T-0110 fix `/code-review` findings on T-0101, then T-0102 frame loop, timing and input |
 | **Blocked** | — |
 | **Remote / CI** | https://github.com/apz98/terra (public) · CI: GitHub Actions (`ubuntu-24.04`) runs `cargo xtask ci` on push/PR to `main`; wait on it with `cargo xtask wait-ci` |
 
@@ -28,7 +28,7 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | Review | Last run | Due? |
 |---|---|---|
-| `/code-review` | 2026-10-22 (end of M0, `2b2725b..bc4ab5c`): 8 findings → T-0109 (fixed in 0.1.1) | **Due:** T-0101 added ~810 lines of Rust (`811d5b2..` the T-0101 commit). Then: end of M1 |
+| `/code-review` | 2026-10-23 (T-0101, `811d5b2..ec594f2`): 10 findings → T-0110 (7 to fix, 3 no change). Before: 2026-10-22 (end of M0): 8 → T-0109 | Next: end of M1 |
 | `/security-review` | never | Not yet (first trigger: save files in M4, networking in M6) |
 
 ## Notes for the next session

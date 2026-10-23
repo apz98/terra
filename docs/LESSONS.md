@@ -51,8 +51,24 @@ unless it is written here. This file is how Claude gets better across sessions.
 10. **Look at the window, don't guess.** On the reference machine (Hyprland 0.56, Lua
     dispatch syntax) drive the game window with `hyprctl` and probe pixels with `grim`;
     the T-0101 log entry has the commands. Report what the pixels and logs showed.
+11. **Follow every error branch to the next iteration.** For a loop that handles failure
+    statuses (surface, network, I/O), read in the library source what each branch really
+    receives and what the loop does next: does it block, spin, retry forever, or panic in
+    a nested call?
 
 ## Log (newest first)
+
+### 2026-10-23 — `/code-review` of T-0101 (`811d5b2..ec594f2`)
+- **What happened:** T-0101 handled every `CurrentSurfaceTexture` variant, but it never
+  checked what the frame loop does after each one. A skipped frame requests the next one
+  at once, so a minimized window spins. A lost device shows up as `Validation` (wgpu drops
+  the `DeviceError::Lost` without telling us), not as `Lost`. **Cause:** read the enum's
+  docs, not what wgpu-core does on each path, and didn't think about the next frame.
+  **Rule:** 11.
+- **What happened:** I summarized the review's findings for Adrian before checking them.
+  Two were wrong ("the `Validation` arm is dead code"; the device-loss mechanism).
+  **Rule:** none new. Rule 4 covers it: check review findings before stating them as facts,
+  or label them unverified.
 
 ### 2026-10-23 — T-0101 Window and GPU surface
 - **What happened:** wgpu 30's API differs from what I remembered: `get_current_texture`

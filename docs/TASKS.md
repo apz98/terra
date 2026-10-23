@@ -82,6 +82,45 @@ afterwards it means auditing everything at once.
 - **Docs:** ARCHITECTURE §2 (two crates), §3 (main thread), §5; README (run, controls);
   `ci.yml` env; CHANGELOG.
 
+### T-0110 Fix `/code-review` findings on T-0101 (`811d5b2..ec594f2`) — `todo`
+Review of T-0101 (2026-10-23): 10 findings, each checked against wgpu 30.0.1 and winit
+0.30.13 sources. 7 to fix (two of them with a different cause than reported), 3 need no
+change. Goes ahead of T-0102 because T-0102 builds its frame loop on this code, and
+findings 1–5 are a 100 % CPU spin, a frozen window and three panics.
+- **Crates:** `terra-render`, `terra-client`.
+1. **Redraw spin:** a skipped frame requests the next redraw at once, so a minimized
+   (0×0) window spins at 100 % CPU. `acquire` says whether to redraw now or wait. While
+   waiting, the client retries on a short timer (`ControlFlow::WaitUntil`), and on
+   `Resized`/`Occluded(false)`. It can't rely on events alone: winit has no `Occluded`
+   on Wayland.
+2. **Device lost:** the callback only logs. A lost device makes `get_current_texture` return
+   `Validation`: wgpu drops `DeviceError::Lost` without telling us. The code then logs
+   "validation error" every frame and the window freezes. Record the loss in `Gpu`, and
+   turn `Validation` into `GpuError::DeviceLost` (with the callback's reason and
+   message). The client exits cleanly with that error. Recreating the device is later work
+   (ARCHITECTURE §5).
+3. **Recreated surface:** after `Lost`, query the capabilities again and pick the format and
+   present mode again, so the F9 toggle and `configure` don't use the old surface's lists.
+4. **Recreation fails:** return `GpuError::CreateSurface` instead of configuring the lost
+   surface, which panics with `InvalidSurface`.
+5. **Size clamp:** clamp the surface to `device.limits().max_texture_dimension_2d`
+   (above it, `configure` panics with `TooLarge`), and warn when it does.
+6. **Suboptimal:** reconfigure once, at the window's current size. If the next frame is
+   suboptimal too, keep presenting until the size changes.
+7. **Outdated:** reconfigure at the window's *current* size (the caller passes a closure; on
+   X11 the size comes from the server, so it isn't read every frame), not the cached one.
+   If acquiring fails twice in a row, wait (finding 1) instead of retrying at once.
+- **No change:** finding 8 ("the `Validation` arm is dead code") is wrong: that arm is
+  where a device loss ends up (finding 2). Finding 9 (unused `format()`/`present_mode()`) is
+  true, but T-0105's pipeline and T-0106's overlay need them. Finding 10 (no profiling
+  scopes or baseline) is already in T-0102's AC and T-0107.
+- **AC:** unit tests for the size clamp and for the retry/wait decision; a GPU test where
+  `device.destroy()` makes `Gpu` report the loss; checked by hand on the reference
+  machine: resize, F9 and close still work, with no warnings in the log. CPU use while the
+  window is hidden is checked on X11 if one is available, otherwise reported as not checked.
+  `cargo xtask ci` green.
+- **Docs:** ARCHITECTURE §3 and §5, LESSONS, CHANGELOG, STATUS.
+
 ### T-0102 Frame loop, timing and input — `todo`
 - **Crates:** `terra-client`.
 - `FrameTimer`: delta time (clamped, e.g. ≤ 250 ms after a stall), fps and average/max
