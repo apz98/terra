@@ -4,7 +4,7 @@ use std::io::{self, IsTerminal};
 use std::sync::OnceLock;
 
 use tracing_subscriber::EnvFilter;
-use tracing_subscriber::filter::{FromEnvError, LevelFilter};
+use tracing_subscriber::filter::{Directive, LevelFilter};
 use tracing_subscriber::fmt;
 use tracing_subscriber::prelude::*;
 
@@ -12,7 +12,7 @@ use tracing_subscriber::prelude::*;
 /// (e.g. `debug`, or `info,terra_render=trace`).
 pub const LOG_ENV_VAR: &str = "TERRA_LOG";
 
-/// Filter used when [`LOG_ENV_VAR`] is unset or invalid.
+/// Filter used when [`LOG_ENV_VAR`] is unset, empty, or has no valid directive.
 pub const DEFAULT_LOG_FILTER: LevelFilter = LevelFilter::INFO;
 
 /// Why [`init_logging`] could not install Terra's subscriber.
@@ -29,8 +29,9 @@ static INIT: OnceLock<Result<(), LoggingError>> = OnceLock::new();
 
 /// Installs the global `tracing` subscriber, writing to stderr.
 ///
-/// The filter comes from [`LOG_ENV_VAR`] (default [`DEFAULT_LOG_FILTER`]; an
-/// invalid value falls back to the default and logs a warning). Debug builds use
+/// The filter comes from [`LOG_ENV_VAR`] (default [`DEFAULT_LOG_FILTER`]).
+/// Invalid directives are dropped with a warning and the valid ones still apply;
+/// if none is valid, the default is used. Debug builds use
 /// the multi-line `pretty` format, release builds a compact one; colours only
 /// when stderr is a terminal. Events from crates using the `log` facade (wgpu,
 /// winit) are forwarded too.
@@ -42,7 +43,7 @@ pub fn init_logging() -> Result<(), LoggingError> {
 }
 
 fn install() -> Result<(), LoggingError> {
-    let (filter, filter_error) = build_filter(std::env::var(LOG_ENV_VAR).ok().as_deref());
+    let (filter, invalid) = build_filter(std::env::var(LOG_ENV_VAR).ok().as_deref());
     let output = fmt::layer()
         .with_writer(io::stderr)
         .with_ansi(io::stderr().is_terminal());
@@ -54,25 +55,39 @@ fn install() -> Result<(), LoggingError> {
     };
     result.map_err(|err| LoggingError::AlreadySet(err.to_string()))?;
 
-    if let Some(err) = filter_error {
+    if !invalid.is_empty() {
         tracing::warn!(
-            "ignoring invalid {LOG_ENV_VAR}: {err}; using `{DEFAULT_LOG_FILTER}` instead"
+            "ignoring invalid directives in {LOG_ENV_VAR}: {}. The valid ones still apply \
+             (`{DEFAULT_LOG_FILTER}` if none is left).",
+            invalid.join("; ")
         );
     }
     Ok(())
 }
 
-/// Parses a [`LOG_ENV_VAR`] value. `None` or an empty value gives the default
-/// filter; an invalid value gives the default filter plus the parse error.
-fn build_filter(value: Option<&str>) -> (EnvFilter, Option<FromEnvError>) {
-    let builder = || EnvFilter::builder().with_default_directive(DEFAULT_LOG_FILTER.into());
-    match value {
-        None => (builder().parse_lossy(""), None),
-        Some(value) => match builder().parse(value) {
-            Ok(filter) => (filter, None),
-            Err(err) => (builder().parse_lossy(""), Some(err.into())),
-        },
+/// Parses a [`LOG_ENV_VAR`] value: comma-separated directives, as `EnvFilter` splits
+/// them. The valid ones form the filter (the default filter if there are none); each
+/// invalid one is dropped and described in the returned list, for the warning.
+///
+/// Directives are parsed one by one rather than with `EnvFilter::parse_lossy`, which
+/// prints its own unformatted line to stderr for every invalid directive.
+fn build_filter(value: Option<&str>) -> (EnvFilter, Vec<String>) {
+    let mut valid = Vec::new();
+    let mut invalid = Vec::new();
+    let directives = value.unwrap_or_default().split(',').map(str::trim);
+    for directive in directives.filter(|d| !d.is_empty()) {
+        match directive.parse::<Directive>() {
+            Ok(_) => valid.push(directive),
+            Err(err) => invalid.push(format!("`{directive}` ({err})")),
+        }
     }
+    let builder = || EnvFilter::builder().with_default_directive(DEFAULT_LOG_FILTER.into());
+    // Every directive left parsed on its own, so the strict parse succeeds; the lossy
+    // fallback (just the default, as nothing is left to drop) only covers the impossible.
+    let filter = builder()
+        .parse(valid.join(","))
+        .unwrap_or_else(|_| builder().parse_lossy(""));
+    (filter, invalid)
 }
 
 #[cfg(test)]
@@ -81,22 +96,22 @@ mod tests {
 
     #[test]
     fn unset_filter_uses_default() {
-        let (filter, err) = build_filter(None);
+        let (filter, invalid) = build_filter(None);
         assert_eq!(filter.to_string(), "info");
-        assert!(err.is_none());
+        assert_eq!(invalid, Vec::<String>::new());
     }
 
     #[test]
     fn empty_filter_uses_default() {
-        let (filter, err) = build_filter(Some(""));
+        let (filter, invalid) = build_filter(Some(""));
         assert_eq!(filter.to_string(), "info");
-        assert!(err.is_none());
+        assert_eq!(invalid, Vec::<String>::new());
     }
 
     #[test]
     fn valid_filter_is_used() {
-        let (filter, err) = build_filter(Some("warn,terra_core=trace"));
-        assert!(err.is_none());
+        let (filter, invalid) = build_filter(Some("warn,terra_core=trace"));
+        assert!(invalid.is_empty(), "{invalid:?}");
         let text = filter.to_string();
         assert!(text.contains("terra_core=trace"), "{text}");
         assert!(text.contains("warn"), "{text}");
@@ -104,8 +119,20 @@ mod tests {
 
     #[test]
     fn invalid_filter_falls_back_with_error() {
-        let (filter, err) = build_filter(Some("terra_core=loud"));
+        let (filter, invalid) = build_filter(Some("terra_core=loud"));
         assert_eq!(filter.to_string(), "info");
-        assert!(err.is_some());
+        assert_eq!(invalid.len(), 1);
+        assert!(invalid[0].starts_with("`terra_core=loud` ("), "{invalid:?}");
+    }
+
+    #[test]
+    fn invalid_directives_are_dropped_and_valid_ones_kept() {
+        let (filter, invalid) = build_filter(Some("terra_core=loud, warn,terra_render=trace,=x"));
+        assert_eq!(invalid.len(), 2, "{invalid:?}");
+        assert!(invalid[1].starts_with("`=x` ("), "{invalid:?}");
+        let text = filter.to_string();
+        assert!(text.contains("terra_render=trace"), "{text}");
+        assert!(text.contains("warn"), "{text}");
+        assert!(!text.contains("terra_core"), "{text}");
     }
 }

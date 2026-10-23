@@ -31,7 +31,7 @@ cargo run -p terra                 # run the game (currently prints its version)
 cargo run -p terra --features profile-tracy   # same, streaming profiling scopes to Tracy
 cargo build --workspace            # build everything
 cargo test --workspace             # run all tests
-cargo xtask ci                     # every gate: fmt, clippy, tests, rustdoc, check-docs (CI runs the same)
+cargo xtask ci                     # every gate: check-docs, fmt, clippy (+ profile-tracy), tests, rustdoc (CI runs the same)
 cargo xtask check-docs             # docs agree with the code (versions, tasks, changelog)
 cargo xtask bump terra-core minor --dry-run   # version bump with cascade (docs/VERSIONING.md)
 cargo xtask wait-ci                # after a push: wait for GitHub Actions on HEAD (needs `gh`)

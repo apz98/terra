@@ -20,13 +20,20 @@ const MAX_NAME_ATTEMPTS: u32 = 100;
 ///
 /// The data directory is the platform's per-user data folder for Terra
 /// (`~/.local/share/terra` on Linux, `%APPDATA%\Terra\data` on Windows). If the
-/// platform has none (no home directory), the system temp folder is used instead.
+/// platform has none (no home directory), `crash-reports` in the working directory
+/// is used instead. Never a shared folder such as `/tmp`, where another user could
+/// create the directory first.
 pub fn default_crash_dir() -> PathBuf {
-    directories::ProjectDirs::from("", "", "Terra")
-        .map_or_else(
-            || std::env::temp_dir().join("terra"),
-            |dirs| dirs.data_dir().to_path_buf(),
-        )
+    crash_dir(
+        directories::ProjectDirs::from("", "", "Terra").map(|dirs| dirs.data_dir().to_path_buf()),
+    )
+}
+
+/// `<data_dir>/crash-reports`, or `<working dir>/crash-reports` without a data dir.
+fn crash_dir(data_dir: Option<PathBuf>) -> PathBuf {
+    // An unreadable working directory leaves a relative path, which still means it.
+    data_dir
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default())
         .join(CRASH_DIR_NAME)
 }
 
@@ -34,32 +41,44 @@ pub fn default_crash_dir() -> PathBuf {
 ///
 /// The report holds the time, `version`, OS, thread, panic message and location,
 /// and a full backtrace (captured whatever `RUST_BACKTRACE` says). The hook then
-/// logs the report's path (to stderr if logging isn't initialised) and runs the
-/// previously installed hook, so the usual panic message still appears. It also
-/// runs before the process aborts in release builds (`panic = "abort"`).
+/// prints the report's path (or why it couldn't be written) to stderr, also logs it
+/// if logging is initialised, and runs the previously installed hook, so the usual
+/// panic message still appears. The stderr line doesn't depend on the log filter,
+/// so `TERRA_LOG=off` can't hide where the report went. The hook also runs before
+/// the process aborts in release builds (`panic = "abort"`).
 ///
 /// Call it once, from the binary's `main`, after [`init_logging`](super::init_logging).
 /// Each call stacks another hook.
 pub fn install_crash_handler(version: &'static str, dir: PathBuf) {
     let previous = panic::take_hook();
     panic::set_hook(Box::new(move |info| {
-        let report = CrashReport::capture(version, info);
+        let written = CrashReport::capture(version, info).write_to(&dir);
         let logging = tracing::dispatcher::has_been_set();
-        match report.write_to(&dir) {
-            Ok(path) if logging => {
-                tracing::error!(path = %path.display(), "crash report written");
-            }
-            Ok(path) => eprintln!("Terra crashed. Crash report: {}", path.display()),
-            Err(err) if logging => {
-                tracing::error!(dir = %dir.display(), "could not write crash report: {err}");
-            }
-            Err(err) => eprintln!(
-                "Terra crashed. Could not write a crash report to {}: {err}",
-                dir.display()
-            ),
-        }
+        announce(&written, &dir, logging, &mut io::stderr());
         previous(info);
     }));
+}
+
+/// Tells the player where the crash report went: always a line on `out`, plus an
+/// `error` event if `logging` (a global subscriber is installed). Write errors on `out` are ignored;
+/// there's nowhere left to report them.
+fn announce(written: &io::Result<PathBuf>, dir: &Path, logging: bool, out: &mut impl io::Write) {
+    let _ = match written {
+        Ok(path) => writeln!(out, "Terra crashed. Crash report: {}", path.display()),
+        Err(err) => writeln!(
+            out,
+            "Terra crashed. Could not write a crash report to {}: {err}",
+            dir.display()
+        ),
+    };
+    if logging {
+        match written {
+            Ok(path) => tracing::error!(path = %path.display(), "crash report written"),
+            Err(err) => {
+                tracing::error!(dir = %dir.display(), "could not write crash report: {err}");
+            }
+        }
+    }
 }
 
 /// Everything a crash report records.
@@ -204,5 +223,62 @@ mod tests {
     #[test]
     fn default_dir_ends_in_crash_reports() {
         assert!(default_crash_dir().ends_with(CRASH_DIR_NAME));
+    }
+
+    #[test]
+    fn crash_dir_uses_the_data_dir() {
+        let data = PathBuf::from("/home/someone/.local/share/terra");
+        assert_eq!(crash_dir(Some(data.clone())), data.join(CRASH_DIR_NAME));
+    }
+
+    #[test]
+    fn crash_dir_without_data_dir_is_the_working_dir_not_temp() {
+        let dir = crash_dir(None);
+        assert_eq!(dir, std::env::current_dir().unwrap().join(CRASH_DIR_NAME));
+        assert!(!dir.starts_with(std::env::temp_dir()), "{}", dir.display());
+    }
+
+    #[test]
+    fn announce_prints_the_path() {
+        let mut out = Vec::new();
+        let path = PathBuf::from("/data/crash-reports/crash-1.log");
+        announce(&Ok(path), Path::new("/data/crash-reports"), false, &mut out);
+        assert_eq!(
+            String::from_utf8(out).unwrap(),
+            "Terra crashed. Crash report: /data/crash-reports/crash-1.log\n"
+        );
+    }
+
+    #[test]
+    fn announce_prints_the_write_error() {
+        let mut out = Vec::new();
+        let err = io::Error::new(io::ErrorKind::PermissionDenied, "read-only");
+        announce(&Err(err), Path::new("/data/crash-reports"), false, &mut out);
+        assert_eq!(
+            String::from_utf8(out).unwrap(),
+            "Terra crashed. Could not write a crash report to /data/crash-reports: read-only\n"
+        );
+    }
+
+    #[test]
+    fn announce_prints_even_when_logging_is_on() {
+        use tracing_subscriber::prelude::*;
+
+        // A subscriber that drops every event, like `TERRA_LOG=off`.
+        let subscriber =
+            tracing_subscriber::registry().with(tracing_subscriber::filter::LevelFilter::OFF);
+        tracing::subscriber::with_default(subscriber, || {
+            let mut out = Vec::new();
+            announce(
+                &Ok(PathBuf::from("crash-1.log")),
+                Path::new("."),
+                true,
+                &mut out,
+            );
+            assert_eq!(
+                String::from_utf8(out).unwrap(),
+                "Terra crashed. Crash report: crash-1.log\n"
+            );
+        });
     }
 }

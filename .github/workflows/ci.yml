@@ -10,11 +10,15 @@ on:
 permissions:
   contents: read
 
-# A newer push to a PR makes its older run pointless, so that one is cancelled. Runs on
-# `main` are never cancelled: every commit there gets a result, and a run someone is
-# waiting on (`cargo xtask wait-ci`) can't end as `cancelled` because of a later push.
+# A group keeps one running and one pending run; a newly queued run cancels the pending
+# one even with `cancel-in-progress: false` (GitHub docs, "Control the concurrency of
+# workflows and jobs"). So:
+# - PRs share one group per PR, and a newer push cancels the older run, which is pointless.
+# - Pushes to `main` get one group per commit, so no other push can cancel them: every
+#   commit gets a result, and the run `cargo xtask wait-ci` waits on can't end as
+#   `cancelled` because of a later push.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:

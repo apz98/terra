@@ -37,6 +37,21 @@ const GATES: &[Gate] = &[
         ],
         env: &[],
     },
+    // Optional features aren't built by the gate above. `profile-tracy` swaps in a
+    // different `profiling` backend, so it gets its own lint pass.
+    Gate::Cargo {
+        args: &[
+            "clippy",
+            "-p",
+            "terra",
+            "--features",
+            "profile-tracy",
+            "--",
+            "-D",
+            "warnings",
+        ],
+        env: &[],
+    },
     Gate::Cargo {
         args: &["test", "--workspace"],
         env: &[],
@@ -79,5 +94,18 @@ mod tests {
     #[test]
     fn check_docs_runs_first() {
         assert!(matches!(GATES.first(), Some(Gate::CheckDocs)));
+    }
+
+    #[test]
+    fn the_tracy_feature_is_linted() {
+        let tracy = GATES.iter().any(|gate| {
+            matches!(gate, Gate::Cargo { args, .. }
+                if args.starts_with(&["clippy", "-p", "terra", "--features", "profile-tracy"])
+                    && args.ends_with(&["-D", "warnings"]))
+        });
+        assert!(
+            tracy,
+            "no `cargo clippy -p terra --features profile-tracy` gate"
+        );
     }
 }

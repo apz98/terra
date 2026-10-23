@@ -1,6 +1,6 @@
 [package]
 name = "terra-core"
-version = "0.1.0"
+version = "0.1.1"
 description = "Shared foundation for Terra: coordinates, ids, math, diagnostics, config, errors."
 edition.workspace = true
 rust-version.workspace = true

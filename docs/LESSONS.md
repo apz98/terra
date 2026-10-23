@@ -30,7 +30,8 @@ unless it is written here. This file is how Claude gets better across sessions.
 3. **The shell is zsh with aliases.** `ls` output may be swallowed: use `command ls -A`
    or the file tools. A word starting with `=` is a command lookup (`echo ====` fails),
    unmatched globs are errors (quote `--include='*.md'`), and `/usr/bin/time` and `bc`
-   aren't installed: time with `date +%s%N` arithmetic.
+   aren't installed: time with `date +%s%N` arithmetic. Separators between batched
+   commands: `echo '-----'`, never `echo =====`.
 4. **Verify, don't assume.** Look up crate versions on crates.io (`curl -A terra-dev`, no
    personal data in headers) and toolchain versions with `rustup check` at task time;
    confirm a command's output before reporting it.
@@ -47,6 +48,24 @@ unless it is written here. This file is how Claude gets better across sessions.
    `replace` arguments, and check the file's line count or `git diff --stat` afterwards.
 
 ## Log (newest first)
+
+### 2026-10-23 — T-0109 Fix `/code-review` findings on M0
+- **What happened:** the session's first command was `cat docs/LESSONS.md && echo ===== …`,
+  which failed on the exact zsh quirk Rule 3 lists, in the same command that loaded the
+  rule. **Cause:** batching the LESSONS read with other reads, so the Rules weren't in
+  context yet. **Rule:** 3 now names the safe separator. Read LESSONS on its own first.
+- **What happened:** running the binary showed every invalid `TERRA_LOG` directive reported
+  twice: `EnvFilter::parse_lossy` prints its own raw line to stderr. Tests couldn't see it.
+  **Fix:** parse directives one by one with `Directive::from_str`. (`from_directives` is
+  private, so the valid ones are re-joined and parsed strictly.)
+- **Note:** `tracing::dispatcher::has_been_set()` only sees the *global* subscriber, not
+  one set with `tracing::subscriber::with_default`. To test both branches of code that
+  checks it, pass the flag in as a parameter.
+- **Note:** GitHub's concurrency docs now have `queue: max` (up to 100 pending runs per
+  group). Per-commit groups were the simpler fix here: `main` runs don't wait on each other.
+- **Note:** clippy 1.99 rejects `assert!(v.is_empty())` without a message ("used `assert!`
+  to check that a value is empty"). Use `assert_eq!(v, Vec::<T>::new())`, which also shows
+  the contents when it fails.
 
 ### 2026-10-22 — `/code-review` of M0 (`2b2725b..bc4ab5c`)
 - **What happened:** T-0010 claimed `cancel-in-progress: false` means `main` runs are never
@@ -94,8 +113,8 @@ unless it is written here. This file is how Claude gets better across sessions.
   the binary for anything user-visible. This is why.
 - **Note:** global state (subscriber, panic hook) is tested in its own `tests/*.rs` file,
   since each one runs as a separate process. The Tracy backend of `profiling` panics on the
-  first scope unless `tracy_client::Client::start()` ran. CI builds default features only,
-  so check `cargo clippy -p terra --features profile-tracy` by hand when touching it.
+  first scope unless `tracy_client::Client::start()` ran. (The manual
+  `--features profile-tracy` check that was noted here is a `cargo xtask ci` gate since T-0109.)
 - **Note:** clippy pedantic flags `name.ends_with(".log")` in tests
   (`case_sensitive_file_extension_comparisons`). Use `Path::extension()`.
 

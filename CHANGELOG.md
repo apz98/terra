@@ -4,6 +4,26 @@ All notable changes. Format and bump rules: [`docs/VERSIONING.md`](docs/VERSIONI
 Headings are game versions (`terra` crate) unless noted.
 
 ## [Unreleased]
+
+## terra 0.1.1 — 2026-10-23
+Bumps: terra-core 0.1.0 → 0.1.1, terra 0.1.0 → 0.1.1, terra-xtask 0.2.0 → 0.2.1
+### Fixed
+Fixes for the `/code-review` findings on M0 (T-0109):
+- Crash reports: the hook always prints the report's path (or the write error) to stderr,
+  so `TERRA_LOG=off` can't hide it. Without a home directory, reports go to
+  `./crash-reports/` instead of the shared `/tmp/terra`.
+- `TERRA_LOG`: invalid directives are dropped and the valid ones kept (before, one bad
+  directive threw away the whole value); one warning names every invalid directive.
+- ci: pushes to `main` get one concurrency group per commit. A queued run cancels the
+  group's pending run even with `cancel-in-progress: false`, so a third quick push could
+  cancel the second (0.1.0 wrongly said `main` runs are never cancelled).
+- xtask `wait-ci`: a failed `gh run list` is retried on the next poll, giving up after 6
+  failures in a row; a run that vanishes after it was seen counts as such a failure
+  instead of "no run, was it pushed?".
+- xtask `check-docs`: a closing fence indented 4+ columns more than its opening fence
+  doesn't close the code block (CommonMark).
+- xtask `ci`: also runs `cargo clippy -p terra --features profile-tracy -- -D warnings`.
+### Other
 - ci: installs the Ubuntu system packages from `.github/ubuntu-packages.txt` and checks
   Vulkan with `vulkaninfo`; runner pinned to `ubuntu-24.04` (T-0007)
 - docs: README "Building on Linux" lists the Arch and Ubuntu packages (T-0007)

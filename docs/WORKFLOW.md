@@ -15,8 +15,9 @@ This is the loop for every task. `/next` enters it; nothing else should.
    are fine; avoid GPL in shipped crates) and maintenance status.
 4. **Implement** in small steps. Tests alongside code. Hot path? Add/extend a
    criterion benchmark and record numbers in `PERFORMANCE.md`.
-5. **Verify.** `cargo xtask ci` (fmt, clippy `-D warnings`, tests, rustdoc
-   `-D warnings`, `check-docs`; stops at the first failure). For anything visual
+5. **Verify.** `cargo xtask ci` (`check-docs`, fmt, clippy `-D warnings` on the
+   workspace and on `terra --features profile-tracy`, tests, rustdoc `-D warnings`;
+   stops at the first failure). For anything visual
    or interactive, run the game and describe what you saw. If you can't verify something, say so; never claim it works untested.
 6. **Sync docs** using the matrix below. Rustdoc for every public item you added.
 7. **Version.** Determine the level per changed crate (`VERSIONING.md`), then run

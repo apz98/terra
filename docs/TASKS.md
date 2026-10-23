@@ -13,7 +13,7 @@ Each task lists the crates it touches, its acceptance criteria (AC), and the doc
 Goal and exit criteria: `ROADMAP.md` M1. A window showing a textured 16³ section you can
 fly around, ≥ 60 fps on the reference machine, baseline numbers recorded.
 
-### T-0109 Fix `/code-review` findings on M0 (`2b2725b..bc4ab5c`) — `todo`
+### T-0109 Fix `/code-review` findings on M0 (`2b2725b..bc4ab5c`) — `done (0.1.1)`
 Review of T-0010, T-0006, T-0007, T-0008 (2026-10-22): 8 findings, all checked against
 the code. First in M1 because finding 1 can make CI report a good `main` commit as
 `cancelled`, and findings 3–4 can make `wait-ci` report red CI that isn't red.

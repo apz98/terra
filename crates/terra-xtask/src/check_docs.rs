@@ -342,16 +342,22 @@ fn defined_task_ids(md: &str) -> Vec<&str> {
 /// templates live in code blocks and may name tasks that don't exist.
 ///
 /// Follows `CommonMark`: a fence is 3+ backticks or tildes, and only a fence of the same
-/// character, at least as long, with nothing after it closes it. Any indentation is
-/// accepted, because fences inside nested list items are indented by 4+ spaces. (At the
-/// top level that would be an indented code block, which is code either way.)
+/// character, at least as long, with nothing after it, indented at most 3 columns more
+/// than the opening fence, closes it. (`CommonMark` measures from the container; the
+/// opening fence stands in for it.) Any opening indentation is accepted, because fences
+/// inside nested list items are indented by 4+ spaces. (At the top level that would be
+/// an indented code block, which is code either way.)
 fn prose_lines(md: &str) -> Vec<(usize, &str)> {
-    let mut open: Option<(u8, usize)> = None;
+    let mut open: Option<Fence> = None;
     let mut prose = Vec::new();
     for (i, line) in md.lines().enumerate() {
         match (open, fence(line)) {
-            (None, Some((ch, len, _))) => open = Some((ch, len)),
-            (Some((ch, len)), Some((c, l, bare))) if c == ch && l >= len && bare => open = None,
+            (None, Some(f)) => open = Some(f),
+            (Some(o), Some(f))
+                if f.ch == o.ch && f.len >= o.len && f.bare && f.indent <= o.indent + 3 =>
+            {
+                open = None;
+            }
             (Some(_), _) => {}
             (None, None) => prose.push((i + 1, line)),
         }
@@ -359,9 +365,25 @@ fn prose_lines(md: &str) -> Vec<(usize, &str)> {
     prose
 }
 
-/// `(fence character, length, nothing follows it)` if `line` is a code fence.
-fn fence(line: &str) -> Option<(u8, usize, bool)> {
+/// A code fence line.
+#[derive(Clone, Copy)]
+struct Fence {
+    /// `` ` `` or `~`.
+    ch: u8,
+    /// How many of them.
+    len: usize,
+    /// Nothing but whitespace follows them (required to close a block).
+    bare: bool,
+    /// Columns of indentation, with tab stops every 4 columns.
+    indent: usize,
+}
+
+/// The fence on `line`, if it is one.
+fn fence(line: &str) -> Option<Fence> {
     let rest = line.trim_start_matches([' ', '\t']);
+    let indent = line[..line.len() - rest.len()].bytes().fold(0, |col, c| {
+        if c == b'\t' { col / 4 * 4 + 4 } else { col + 1 }
+    });
     let ch = *rest
         .as_bytes()
         .first()
@@ -372,7 +394,12 @@ fn fence(line: &str) -> Option<(u8, usize, bool)> {
     if len < 3 || (ch == b'`' && after.contains('`')) {
         return None;
     }
-    Some((ch, len, after.trim().is_empty()))
+    Some(Fence {
+        ch,
+        len,
+        bare: after.trim().is_empty(),
+        indent,
+    })
 }
 
 /// Runs `cargo xtask check-docs`.
@@ -656,6 +683,38 @@ T-0905 is prose
         assert_eq!(
             problems(&[("docs/NOTES.md", notes)]),
             ["docs/NOTES.md:6: T-0902 is not a task in docs/TASKS.md or docs/tasks/archive/"]
+        );
+    }
+
+    #[test]
+    fn a_closing_fence_indented_4_more_than_the_opening_one_is_code() {
+        let notes = "\
+```md
+Example of a nested list in Markdown:
+- Steps:
+    ```sh
+    T-0901 is code
+    ```
+T-0902 is still code
+```
+- Item
+  ```
+  T-0903 is code
+     ```
+  T-0904 is prose
+\t```
+\tT-0905 is code
+\t\t```
+\tT-0906 is still code
+\t   ```
+T-0907 is prose
+";
+        assert_eq!(
+            problems(&[("docs/NOTES.md", notes)]),
+            [
+                "docs/NOTES.md:13: T-0904 is not a task in docs/TASKS.md or docs/tasks/archive/",
+                "docs/NOTES.md:19: T-0907 is not a task in docs/TASKS.md or docs/tasks/archive/",
+            ]
         );
     }
 

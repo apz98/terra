@@ -10,7 +10,7 @@ use std::process::Command;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{Context, Result, anyhow, bail, ensure};
 
 /// The workflow file that runs `cargo xtask ci` (`.github/workflows/ci.yml`).
 const WORKFLOW: &str = "ci.yml";
@@ -24,12 +24,16 @@ struct Limits {
     finish: Duration,
     /// Between two `gh` calls.
     poll: Duration,
+    /// Failed `gh` calls in a row before giving up. A single failure (network blip,
+    /// API hiccup) is retried on the next poll.
+    max_failures: u32,
 }
 
 const LIMITS: Limits = Limits {
     appear: Duration::from_secs(120),
     finish: Duration::from_mins(45),
     poll: Duration::from_secs(5),
+    max_failures: 6,
 };
 
 /// One workflow run, as `gh run list` reports it.
@@ -106,21 +110,49 @@ fn parse_run(output: &str) -> Result<Option<Run>> {
     }))
 }
 
+/// The first 10 characters of a SHA, for messages.
+fn short(sha: &str) -> &str {
+    &sha[..sha.len().min(10)]
+}
+
 /// Polls until the run for `sha` completes. `Ok` only if it succeeded; an error if it
-/// failed, was cancelled, never appeared, or didn't finish in time.
+/// failed, was cancelled, never appeared, didn't finish in time, or `gh` failed
+/// `max_failures` times in a row.
 fn wait(env: &mut impl Env, sha: &str, limits: Limits) -> Result<Run> {
-    let short = &sha[..sha.len().min(10)];
+    let short = short(sha);
     let mut last_status = String::new();
+    // Once GitHub has shown the run, "no run" can only be a glitch, not a missing push.
+    let mut seen = false;
+    let mut failures = 0;
     loop {
         let elapsed = env.elapsed();
-        match env.latest_run(sha)? {
-            None => ensure!(
+        let answer = match env.latest_run(sha) {
+            Ok(None) if seen => Err(anyhow!("`gh run list` no longer shows the run")),
+            answer => answer,
+        };
+        if answer.is_ok() {
+            failures = 0;
+        }
+        match answer {
+            Err(err) => {
+                failures += 1;
+                ensure!(
+                    failures < limits.max_failures,
+                    "giving up on CI for {short} after {failures} failed `gh` calls in a \
+                     row: {err:#}"
+                );
+                println!(
+                    "wait-ci: {err:#} (failure {failures}/{}, retrying)",
+                    limits.max_failures
+                );
+            }
+            Ok(None) => ensure!(
                 elapsed < limits.appear,
                 "no `{WORKFLOW}` run for {short} after {}s. Was it pushed to a branch CI \
                  runs on (`main`, or a PR to it)?",
                 limits.appear.as_secs()
             ),
-            Some(run) if run.status == "completed" => {
+            Ok(Some(run)) if run.status == "completed" => {
                 ensure!(
                     run.conclusion == "success",
                     "CI {} for {short}: {}\n  logs: gh run view {} --log-failed",
@@ -134,7 +166,8 @@ fn wait(env: &mut impl Env, sha: &str, limits: Limits) -> Result<Run> {
                 );
                 return Ok(run);
             }
-            Some(run) => {
+            Ok(Some(run)) => {
+                seen = true;
                 if run.status != last_status {
                     println!("wait-ci: {short} {} ({})", run.status, run.url);
                     last_status.clone_from(&run.status);
@@ -177,7 +210,7 @@ pub(crate) fn run(root: &Path, args: &[String]) -> Result<()> {
         start: Instant::now(),
     };
     let run = wait(&mut gh, &sha, LIMITS)?;
-    println!("wait-ci: CI passed for {} ({})", &sha[..10], run.url);
+    println!("wait-ci: CI passed for {} ({})", short(&sha), run.url);
     Ok(())
 }
 
@@ -234,6 +267,7 @@ mod tests {
         appear: Duration::from_secs(20),
         finish: Duration::from_secs(60),
         poll: Duration::from_secs(5),
+        max_failures: 3,
     };
 
     /// `gh` reporting run 7 with this status and conclusion.
@@ -301,11 +335,58 @@ mod tests {
     }
 
     #[test]
-    fn gh_errors_stop_the_wait() {
-        let mut fake = Fake::new([Ok(None), Err(anyhow::anyhow!("gh: not logged in"))]);
+    fn a_failed_gh_call_is_retried() {
+        let mut fake = Fake::new([
+            run("in_progress", ""),
+            Err(anyhow!("gh: HTTP 502")),
+            Err(anyhow!("gh: HTTP 502")),
+            run("in_progress", ""),
+            Err(anyhow!("gh: HTTP 502")),
+            run("completed", "success"),
+        ]);
+        assert_eq!(wait_for(&mut fake).unwrap().id, 7);
+        assert_eq!(fake.calls, 6);
+    }
+
+    #[test]
+    fn gh_failing_too_often_in_a_row_stops_the_wait() {
+        let mut fake = Fake::new([Ok(None), Err(anyhow!("gh: not logged in"))]);
         let err = wait_for(&mut fake).unwrap_err().to_string();
+        assert!(err.contains("after 3 failed `gh` calls in a row"), "{err}");
         assert!(err.contains("not logged in"), "{err}");
-        assert_eq!(fake.calls, 2);
+        assert_eq!(fake.calls, 4);
+    }
+
+    #[test]
+    fn a_run_that_vanishes_after_the_appear_limit_is_retried() {
+        let mut fake = Fake::new([
+            run("queued", ""),
+            run("in_progress", ""),
+            run("in_progress", ""),
+            run("in_progress", ""),
+            run("in_progress", ""),
+            // 25 s: past `appear`, but the run was seen, so this is a glitch.
+            Ok(None),
+            Ok(None),
+            run("completed", "success"),
+        ]);
+        assert_eq!(wait_for(&mut fake).unwrap().id, 7);
+        assert_eq!(fake.calls, 8);
+    }
+
+    #[test]
+    fn a_run_that_stays_gone_is_not_blamed_on_the_push() {
+        let mut fake = Fake::new([run("in_progress", ""), Ok(None)]);
+        let err = wait_for(&mut fake).unwrap_err().to_string();
+        assert!(err.contains("no longer shows the run"), "{err}");
+        assert!(!err.contains("Was it pushed"), "{err}");
+        assert_eq!(fake.calls, 4);
+    }
+
+    #[test]
+    fn short_sha_is_ten_characters_at_most() {
+        assert_eq!(short(SHA), "0123456789");
+        assert_eq!(short("abc"), "abc");
     }
 
     #[test]
