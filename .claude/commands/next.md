@@ -6,7 +6,9 @@ argument-hint: "[optional task id, e.g. T-0003, or a note]"
 You are resuming work on **Terra** after a context reset. Follow this exactly.
 
 ## 1. Load state (read, don't skim)
-- `docs/LESSONS.md`, the **Rules** section first. Apply them throughout this session.
+- `docs/LESSONS.md` **on its own, with the Read tool, before any other command** (not
+  batched into a shell command: its rules are about how to write those commands). Rules
+  section first; apply them throughout this session.
 - `docs/STATUS.md`, `docs/TASKS.md`, `docs/OPEN_QUESTIONS.md`
 - `docs/WORKFLOW.md` (the task loop + definition of done) and `docs/VERSIONING.md`
 - `git status`, `git log --oneline -10`, and if a remote exists `cargo xtask wait-ci`

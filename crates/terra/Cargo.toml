@@ -1,6 +1,6 @@
 [package]
 name = "terra"
-version = "0.1.1"
+version = "0.1.2"
 description = "Terra, a Minecraft-style voxel sandbox. This crate's version is the game version."
 edition.workspace = true
 rust-version.workspace = true
@@ -17,7 +17,7 @@ profile-tracy = ["profiling/profile-with-tracy"]
 [dependencies]
 anyhow.workspace = true
 profiling.workspace = true
-terra-core = { path = "../terra-core", version = "0.1.1" }
+terra-core = { path = "../terra-core", version = "0.1.2" }
 tracing.workspace = true
 
 [lints]

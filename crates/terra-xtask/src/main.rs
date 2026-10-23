@@ -32,7 +32,8 @@ commands:
       Fail if the docs disagree with the code: crate tables, CHANGELOG heading,
       STATUS game version, one task in progress, unknown task IDs.
   ci
-      Run every gate: check-docs, fmt, clippy -D warnings, tests, rustdoc -D warnings.
+      Run every gate: check-docs, fmt, cargo deny check, clippy -D warnings (also
+      with profile-tracy), tests, rustdoc -D warnings. Needs cargo-deny installed.
   wait-ci [<commit>]
       Wait for the GitHub Actions `ci.yml` run of a pushed commit (default HEAD) and
       fail unless it passes. Needs the `gh` CLI, logged in.";

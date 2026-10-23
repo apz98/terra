@@ -34,9 +34,9 @@ Crates are created by the task that first needs them, not before. All crates liv
 
 | Crate | Kind | Version | Status | Responsibility |
 |---|---|---|---|---|
-| `terra` | bin | 0.1.1 | prints version; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
-| `terra-core` | lib | 0.1.1 | `diagnostics` (logging, crash reports) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
-| `terra-xtask` | bin (internal) | 0.2.1 | `bump`, `check-docs`, `ci`, `wait-ci` | Automation: version bumps with cascade, doc-drift checks, all quality gates, waiting on GitHub CI; later asset tooling |
+| `terra` | bin | 0.1.2 | prints version; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
+| `terra-core` | lib | 0.1.2 | `diagnostics` (logging, crash reports) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
+| `terra-xtask` | bin (internal) | 0.3.0 | `bump`, `check-docs`, `ci` (incl. `cargo deny check`), `wait-ci` | Automation: version bumps with cascade, doc-drift checks, all quality gates, waiting on GitHub CI; later asset tooling |
 | `terra-render` | lib | — | planned (M1) | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
 | `terra-client` | lib | — | planned (M1) | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
 | `terra-world` | lib | — | planned (M2) | Block states, chunk columns/sections (palette storage), light, world access API |
@@ -123,8 +123,8 @@ data for meshing). There's no shared mutable world between client and server.
   backtrace) into `<data dir>/crash-reports/`, prints the path (or the write error) to
   stderr whatever the log filter, logs it too, then runs the default hook.
   It also runs before the abort in release builds (`panic = "abort"`). Data dir:
-  `directories::ProjectDirs` for "Terra" (`~/.local/share/terra` on Linux,
-  `%APPDATA%\Terra\data` on Windows); saves and identity will live there too. Without a
+  etcetera's native app strategy for "Terra" (`$XDG_DATA_HOME/terra`, by default
+  `~/.local/share/terra`, on Linux; `%APPDATA%\Terra\data` on Windows); saves and identity will live there too. Without a
   home directory, crash reports go to `./crash-reports/` (never a shared dir like `/tmp`).
 - `profiling` crate scopes in hot paths (`profiling::scope!`, `#[profiling::function]`);
   they compile to nothing by default. `cargo run -p terra --features profile-tracy`

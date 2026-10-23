@@ -1,0 +1,55 @@
+# cargo-deny: licenses, security advisories, banned crates and sources.
+# Run with `cargo deny check`; `cargo xtask ci` and CI run it on every commit.
+# Docs: https://embarkstudios.github.io/cargo-deny/
+# Policy: docs/adr/0010-license-and-assets.md. Every exception needs a comment saying why.
+
+[graph]
+# Check optional features too: `profile-tracy` pulls in tracy-client and a C++ build.
+all-features = true
+# Only the platforms Terra ships on (VISION: Linux first, Windows later), so crates that
+# exist only for macOS, Android or the web don't need vetting.
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+]
+
+[advisories]
+# RustSec. Vulnerabilities always fail the check.
+unmaintained = "all"
+unsound = "all"
+yanked = "deny"
+# Each ignore needs a reason: { id = "RUSTSEC-…", reason = "…" }.
+ignore = []
+
+[licenses]
+# Anything not listed is rejected, so copyleft licenses (GPL, LGPL, AGPL, MPL …) fail.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Zlib",
+    "ISC",
+    "Unicode-3.0",
+    "CC0-1.0",
+]
+confidence-threshold = 0.93
+# The list above is policy, not inventory: licenses we don't use yet are fine.
+unused-allowed-license = "allow"
+# Per-crate exceptions, each with a reason: { allow = ["…"], crate = "…" }.
+exceptions = []
+
+[bans]
+# Duplicate versions cost compile time and binary size, but are often out of our hands.
+multiple-versions = "warn"
+# `*` requirements are refused; our own path dependencies always carry a version too.
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+# crates.io only. A git dependency needs an entry here and a reason.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

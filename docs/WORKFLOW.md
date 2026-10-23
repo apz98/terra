@@ -12,10 +12,12 @@ This is the loop for every task. `/next` enters it; nothing else should.
    significant technical choice → draft an ADR before coding.
 3. **Check dependencies.** For new crates/deps, look up the current version on
    crates.io (don't rely on memory), check the license (MIT/Apache/BSD/Zlib/CC0
-   are fine; avoid GPL in shipped crates) and maintenance status.
+   are fine; avoid GPL in shipped crates) and maintenance status. `cargo deny check`
+   enforces the license allow list, RustSec advisories and crates.io-only sources for
+   the whole tree (`deny.toml`); an exception needs a reason in a comment there.
 4. **Implement** in small steps. Tests alongside code. Hot path? Add/extend a
    criterion benchmark and record numbers in `PERFORMANCE.md`.
-5. **Verify.** `cargo xtask ci` (`check-docs`, fmt, clippy `-D warnings` on the
+5. **Verify.** `cargo xtask ci` (`check-docs`, fmt, `cargo deny check`, clippy `-D warnings` on the
    workspace and on `terra --features profile-tracy`, tests, rustdoc `-D warnings`;
    stops at the first failure). For anything visual
    or interactive, run the game and describe what you saw. If you can't verify something, say so; never claim it works untested.

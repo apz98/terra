@@ -8,6 +8,7 @@ use std::panic::{self, PanicHookInfo};
 use std::path::{Path, PathBuf};
 use std::thread;
 
+use etcetera::app_strategy::{AppStrategy, AppStrategyArgs, choose_native_strategy};
 use jiff::Timestamp;
 
 /// Name of the crash report folder inside Terra's data directory.
@@ -19,13 +20,19 @@ const MAX_NAME_ATTEMPTS: u32 = 100;
 /// Where crash reports go by default: `<data dir>/crash-reports`.
 ///
 /// The data directory is the platform's per-user data folder for Terra
-/// (`~/.local/share/terra` on Linux, `%APPDATA%\Terra\data` on Windows). If the
-/// platform has none (no home directory), `crash-reports` in the working directory
-/// is used instead. Never a shared folder such as `/tmp`, where another user could
-/// create the directory first.
+/// (`$XDG_DATA_HOME/terra`, by default `~/.local/share/terra`, on Linux;
+/// `%APPDATA%\Terra\data` on Windows). If the platform has none (no home directory),
+/// `crash-reports` in the working directory is used instead. Never a shared folder such
+/// as `/tmp`, where another user could create the directory first.
 pub fn default_crash_dir() -> PathBuf {
+    let terra = AppStrategyArgs {
+        app_name: "Terra".to_owned(),
+        ..AppStrategyArgs::default()
+    };
     crash_dir(
-        directories::ProjectDirs::from("", "", "Terra").map(|dirs| dirs.data_dir().to_path_buf()),
+        choose_native_strategy(terra)
+            .ok()
+            .map(|dirs| dirs.data_dir()),
     )
 }
 
@@ -223,6 +230,22 @@ mod tests {
     #[test]
     fn default_dir_ends_in_crash_reports() {
         assert!(default_crash_dir().ends_with(CRASH_DIR_NAME));
+    }
+
+    /// The XDG location, as documented (and as `directories` gave before 0.1.2).
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn default_dir_on_linux_is_xdg_data_home() {
+        let data_home = std::env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .filter(|path| path.is_absolute())
+            .unwrap_or_else(|| {
+                PathBuf::from(std::env::var_os("HOME").unwrap()).join(".local/share")
+            });
+        assert_eq!(
+            default_crash_dir(),
+            data_home.join("terra").join(CRASH_DIR_NAME)
+        );
     }
 
     #[test]

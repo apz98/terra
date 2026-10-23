@@ -49,6 +49,23 @@ unless it is written here. This file is how Claude gets better across sessions.
 
 ## Log (newest first)
 
+### 2026-10-23 — T-0108 License and advisory checks (`cargo-deny`)
+- **What happened:** again, the session's first command batched `cat docs/LESSONS.md` with
+  `echo =====` and failed on Rule 3. The T-0109 fix ("read LESSONS on its own first") was
+  only a log line, and `/next` still listed LESSONS as one read among others. **Fix:**
+  `/next` step 1 now says to Read LESSONS alone, before any other command. A lesson that
+  changes how a session starts belongs in `/next`, not just here.
+- **What happened:** `cargo deny --manifest-path <scratch>/Cargo.toml init` ignored the
+  manifest path and wrote the template `deny.toml` into the repo root. Rule 6 caught it
+  (the file "existed" before I wrote mine). **Note:** `cargo deny init` writes to the
+  current directory; `cd` into the scratch dir in the same command.
+- **What happened:** the first `cargo deny check` rejected `option-ext` (MPL-2.0), pulled in
+  by `directories` → `dirs-sys` since T-0006. Replaced `directories` with `etcetera` (same
+  paths, MIT OR Apache-2.0) instead of adding an exception. **Rule:** none new; this is
+  why T-0108 went ahead of wgpu/winit.
+- **Note:** cargo-deny warns about allowed licenses no dependency uses yet;
+  `unused-allowed-license = "allow"` silences it, since the allow list is policy.
+
 ### 2026-10-23 — T-0109 Fix `/code-review` findings on M0
 - **What happened:** the session's first command was `cat docs/LESSONS.md && echo ===== …`,
   which failed on the exact zsh quirk Rule 3 lists, in the same command that loaded the

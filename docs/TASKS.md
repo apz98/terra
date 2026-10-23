@@ -45,7 +45,7 @@ the code. First in M1 because finding 1 can make CI report a good `main` commit 
 - **Docs:** ARCHITECTURE §8, WORKFLOW step 5 (gates), LESSONS (drop the manual Tracy note),
   CHANGELOG, STATUS.
 
-### T-0108 License and advisory checks (`cargo-deny`) — `todo`
+### T-0108 License and advisory checks (`cargo-deny`) — `done (0.1.2)`
 First in M1 (Claude, 70%): wgpu and winit add well over a hundred crates, and ADR 0010
 says licenses are checked with `cargo-deny`. Adding the check before they arrive is cheap;
 afterwards it means auditing everything at once.

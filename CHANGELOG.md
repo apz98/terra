@@ -5,6 +5,25 @@ Headings are game versions (`terra` crate) unless noted.
 
 ## [Unreleased]
 
+## terra 0.1.2 — 2026-10-23
+Bumps: terra-core 0.1.1 → 0.1.2, terra 0.1.1 → 0.1.2, terra-xtask 0.2.1 → 0.3.0
+### Added
+- `deny.toml`: `cargo deny check` enforces the dependency license allow list (MIT,
+  Apache-2.0, BSD-2/3-Clause, Zlib, ISC, Unicode-3.0, CC0-1.0; copyleft is rejected),
+  RustSec advisories (vulnerable, unmaintained, unsound or yanked crates fail) and
+  crates.io-only sources, for Linux and Windows targets with all features. ADR 0010's
+  "checked with `cargo-deny`, added later" is now enforced (T-0108).
+- xtask `ci`: runs `cargo deny check` after fmt, with an install hint if cargo-deny is
+  missing and a note if the installed version differs from CI's (0.20.2). A test checks
+  that `deny.toml` rejects a GPL dependency and accepts an MIT one.
+- ci: installs cargo-deny 0.20.2 with `taiki-e/install-action` (pinned by SHA).
+### Changed
+- terra-core: the data directory comes from `etcetera` instead of `directories`, whose
+  `dirs-sys` pulls in the MPL-2.0 `option-ext`. Same paths as before
+  (`~/.local/share/terra`, `%APPDATA%\Terra\data`).
+### Other
+- docs: README lists cargo-deny as a dev tool and shows the current milestone.
+
 ## terra 0.1.1 — 2026-10-23
 Bumps: terra-core 0.1.0 → 0.1.1, terra 0.1.0 → 0.1.1, terra-xtask 0.2.0 → 0.2.1
 ### Fixed

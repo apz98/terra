@@ -35,8 +35,9 @@ and never let docs drift from code.
    SemVer driven by Conventional Commits; the `terra` crate version **is the game
    version**. Bump in the same commit; update `CHANGELOG.md`.
 6. **Quality gates before every commit:** `cargo fmt --check`, `cargo clippy
-   --workspace --all-targets -- -D warnings`, `cargo test --workspace`, and
-   `cargo xtask check-docs`, all in one command: `cargo xtask ci`. Never commit red.
+   --workspace --all-targets -- -D warnings`, `cargo test --workspace`,
+   `cargo deny check` (licenses, advisories) and `cargo xtask check-docs`, all in one
+   command: `cargo xtask ci`. Never commit red.
 7. **Commit + push.** Conventional Commit messages; one task ≈ one commit (split if
    large). Push to `origin main` and wait for CI with `cargo xtask wait-ci`. Fix red CI first.
 8. **Learn across `/clear`.** Context is wiped often. Whenever something goes wrong or

@@ -7,8 +7,8 @@ with friends over LAN or the internet, built on a custom wgpu engine and optimiz
 
 > Repository: https://github.com/apz98/terra
 >
-> **Status:** M0 Foundations, workspace scaffolded (game version `0.1.0`). See
-> [`docs/STATUS.md`](docs/STATUS.md) and the [roadmap](docs/ROADMAP.md).
+> **Status:** M1 First Light, in progress. See [`docs/STATUS.md`](docs/STATUS.md) for the
+> current game version and the [roadmap](docs/ROADMAP.md).
 
 ## Goals
 
@@ -26,12 +26,21 @@ Install Rust with [rustup](https://rustup.rs). The toolchain is pinned in
 `rust-toolchain.toml` (Rust 1.99.1 with rustfmt and clippy) and rustup installs it
 automatically on the first build.
 
+`cargo xtask ci` also needs [cargo-deny](https://github.com/EmbarkStudios/cargo-deny),
+which checks dependency licenses, security advisories and sources against `deny.toml`.
+Install the version CI uses:
+
+```sh
+cargo install --locked cargo-deny@0.20.2
+```
+
 ```sh
 cargo run -p terra                 # run the game (currently prints its version)
 cargo run -p terra --features profile-tracy   # same, streaming profiling scopes to Tracy
 cargo build --workspace            # build everything
 cargo test --workspace             # run all tests
-cargo xtask ci                     # every gate: check-docs, fmt, clippy (+ profile-tracy), tests, rustdoc (CI runs the same)
+cargo xtask ci                     # every gate: check-docs, fmt, cargo-deny, clippy (+ profile-tracy), tests, rustdoc (CI runs the same)
+cargo deny check                   # just the license / advisory / source checks (deny.toml)
 cargo xtask check-docs             # docs agree with the code (versions, tasks, changelog)
 cargo xtask bump terra-core minor --dry-run   # version bump with cascade (docs/VERSIONING.md)
 cargo xtask wait-ci                # after a push: wait for GitHub Actions on HEAD (needs `gh`)
