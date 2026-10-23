@@ -19,7 +19,7 @@ Interview, vision, architecture, roadmap, tasks, workflow, versioning, ADRs, `/n
 - **AC:** `gh repo view apz98/terra` works; remote `origin` set; tag visible.
 - **Docs:** README (repo URL), STATUS.
 
-### T-0003 Workspace scaffold — `todo`
+### T-0003 Workspace scaffold — `done (0.0.0)`
 - **Crates:** new `terra` (bin), `terra-core` (lib), `terra-xtask` (bin), all `0.0.0`.
 - `rust-toolchain.toml` pinned to the current stable (1.99.x) with rustfmt + clippy.
 - Root `Cargo.toml`: workspace (resolver 3, edition 2024), `[workspace.dependencies]`,

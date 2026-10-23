@@ -43,7 +43,7 @@ Internal tool crates (`terra-xtask`) follow the same rules but never cascade.
 - Versions live in each crate's own `Cargo.toml` (no `version.workspace`).
 - Internal deps use `path` plus a `version` requirement; `cargo xtask bump` keeps them in sync.
 - `cargo xtask bump <crate> <major|minor|patch>` updates the crate, cascades, and prints
-  the bump list for the commit message (built in M0, T-0003).
+  the bump list for the commit message (built in M0, T-0004).
 - **Tags:** only the game version is tagged: `v<terra version>` on the commit that
   set it. The tag is annotated with the crate bump list.
 - **1.0.0** is a manual decision at the end of the Friends Release milestone (M11).

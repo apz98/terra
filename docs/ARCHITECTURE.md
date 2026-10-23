@@ -1,7 +1,7 @@
 # Architecture
 
-Status: **planned**. No code exists yet. Sections marked *(planned)* describe intent and
-become *(implemented)* as tasks land. Keep this file true to the code.
+Status: **scaffolded** (M0). The workspace and first crates exist; most sections are still
+*(planned)* and become *(implemented)* as tasks land. Keep this file true to the code.
 
 ## 1. Big picture
 
@@ -29,13 +29,14 @@ renders, predicts the local player's movement, and sends intents.
 ## 2. Crates
 
 Versions here must match each `Cargo.toml` (`cargo xtask check-docs` enforces it).
-Crates are created by the task that first needs them, not before.
+Crates are created by the task that first needs them, not before. All crates live in
+`crates/<name>/`; shared settings (edition, lints, profiles) are in the root `Cargo.toml`.
 
 | Crate | Kind | Version | Status | Responsibility |
 |---|---|---|---|---|
-| `terra` | bin | — | planned (M0) | Game binary. Wires client + integrated server. **Its version is the game version.** |
-| `terra-core` | lib | — | planned (M0) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
-| `terra-xtask` | bin (internal) | — | planned (M0) | Automation: `bump`, `check-docs`, `ci`, asset tooling |
+| `terra` | bin | 0.0.0 | scaffold (prints version) | Game binary. Wires client + integrated server. **Its version is the game version.** |
+| `terra-core` | lib | 0.0.0 | scaffold (empty) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
+| `terra-xtask` | bin (internal) | 0.0.0 | scaffold (no commands yet) | Automation: `bump`, `check-docs`, `ci`, asset tooling |
 | `terra-render` | lib | — | planned (M1) | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
 | `terra-client` | lib | — | planned (M1) | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
 | `terra-world` | lib | — | planned (M2) | Block states, chunk columns/sections (palette storage), light, world access API |

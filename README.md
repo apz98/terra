@@ -5,8 +5,8 @@ with friends over LAN or the internet, built on a custom wgpu engine and optimiz
 
 > Repository: https://github.com/apz98/terra
 >
-> **Status:** pre-code. Documentation baseline `v0.0.0`. See [`docs/STATUS.md`](docs/STATUS.md)
-> and the [roadmap](docs/ROADMAP.md).
+> **Status:** M0 Foundations, workspace scaffolded (game version `0.0.0`). See
+> [`docs/STATUS.md`](docs/STATUS.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Goals
 
@@ -20,8 +20,21 @@ More in [`docs/VISION.md`](docs/VISION.md).
 
 ## Building
 
-_Coming in M0 (T-0003, T-0007)._ Requires the Rust toolchain pinned in
-`rust-toolchain.toml` and a Vulkan-capable GPU driver.
+Install Rust with [rustup](https://rustup.rs). The toolchain is pinned in
+`rust-toolchain.toml` (Rust 1.99.1 with rustfmt and clippy) and rustup installs it
+automatically on the first build.
+
+```sh
+cargo run -p terra                 # run the game (currently prints its version)
+cargo build --workspace            # build everything
+cargo test --workspace             # run all tests
+cargo clippy --workspace --all-targets -- -D warnings
+cargo xtask                        # project automation (commands arrive in T-0004)
+```
+
+Dev builds optimize dependencies (`opt-level = 3`) and Terra's own code lightly
+(`opt-level = 1`) so the game stays playable. Release builds use fat LTO.
+System packages for the graphics stack are documented in T-0007 (a Vulkan-capable GPU driver is required).
 
 ## Documentation
 

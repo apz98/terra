@@ -1,0 +1,15 @@
+[package]
+name = "terra"
+version = "0.0.0"
+description = "Terra, a Minecraft-style voxel sandbox. This crate's version is the game version."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

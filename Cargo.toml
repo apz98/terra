@@ -1,0 +1,46 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/apz98/terra"
+authors = ["Adrian Paredez"]
+publish = false
+
+# Shared third-party dependency versions. Crates opt in with `foo.workspace = true`.
+# Internal crates are listed in each crate's own manifest (path + version), so that
+# `cargo xtask bump` can keep their requirements in sync.
+[workspace.dependencies]
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Pedantic lints that cost more than they catch in game code.
+module_name_repetitions = "allow" # `world::WorldPos` style names are fine
+must_use_candidate = "allow"      # too noisy; add #[must_use] where it matters
+missing_errors_doc = "allow"      # error enums are documented instead
+cast_precision_loss = "allow"     # f32 <-> integer conversions are everywhere in rendering
+# Restriction lints we want (CLAUDE.md: no unwrap outside tests).
+unwrap_used = "warn"
+dbg_macro = "warn"
+todo = "warn"
+
+[profile.dev]
+opt-level = 1
+
+# Dependencies (wgpu, noise, compression …) are fast even in dev builds.
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
