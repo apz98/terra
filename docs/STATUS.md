@@ -6,11 +6,11 @@ _Update this file in every commit that changes progress. Keep it short._
 |---|---|
 | **Game version** (`terra`) | 0.0.0 (docs baseline, tag `v0.0.0`) |
 | **Milestone** | M0 — Foundations |
-| **Last completed** | T-0001 Documentation baseline |
+| **Last completed** | T-0002 Publish to GitHub |
 | **In progress** | — |
-| **Next up** | T-0003 Workspace scaffold (T-0002 waits on Adrian's `gh auth login`) |
-| **Blocked** | T-0002 Publish to GitHub (expired `gh` token), T-0005 CI (needs T-0002) |
-| **Remote / CI** | none yet |
+| **Next up** | T-0003 Workspace scaffold |
+| **Blocked** | T-0005 CI needs `gh auth refresh -s workflow` from Adrian |
+| **Remote / CI** | https://github.com/apz98/terra (public) · no CI yet |
 
 ## Crate versions
 

@@ -3,6 +3,8 @@
 A Minecraft-style voxel sandbox written in Rust: creative, survival, and multiplayer
 with friends over LAN or the internet, built on a custom wgpu engine and optimized hard.
 
+> Repository: https://github.com/apz98/terra
+>
 > **Status:** pre-code. Documentation baseline `v0.0.0`. See [`docs/STATUS.md`](docs/STATUS.md)
 > and the [roadmap](docs/ROADMAP.md).
 

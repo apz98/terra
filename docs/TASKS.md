@@ -13,9 +13,8 @@ Each task lists the crates it touches, its acceptance criteria (AC), and the doc
 ### T-0001 Documentation baseline — `done (0.0.0)`
 Interview, vision, architecture, roadmap, tasks, workflow, versioning, ADRs, `/next`.
 
-### T-0002 Publish to GitHub — `blocked (needs Adrian: gh login)`
-- **Needs Adrian:** `gh` token is expired → run `! gh auth login -h github.com`.
-- Create the public repo `apz98/terra`, description "A Minecraft-style voxel sandbox in Rust",
+### T-0002 Publish to GitHub — `done (0.0.0)`
+- https://github.com/apz98/terra (public). Created the public repo `apz98/terra`, description "A Minecraft-style voxel sandbox in Rust",
   topics (rust, voxel, game, wgpu, minecraft-clone); push `main` + tag `v0.0.0`.
 - **AC:** `gh repo view apz98/terra` works; remote `origin` set; tag visible.
 - **Docs:** README (repo URL), STATUS.
@@ -46,7 +45,9 @@ Interview, vision, architecture, roadmap, tasks, workflow, versioning, ADRs, `/n
 - **AC:** unit tests for bump cascade and each check; `cargo xtask ci` green.
 - **Docs:** VERSIONING (mechanics), WORKFLOW (commands), ARCHITECTURE.
 
-### T-0005 CI on GitHub Actions — `todo` (after T-0002)
+### T-0005 CI on GitHub Actions — `todo`
+- **Needs Adrian:** the `gh` token lacks the `workflow` scope, which pushing
+  `.github/workflows/*` over HTTPS requires → run `! gh auth refresh -h github.com -s workflow`.
 - `.github/workflows/ci.yml`: ubuntu-latest, toolchain from `rust-toolchain.toml`,
   `Swatinem/rust-cache`, run `cargo xtask ci`. Trigger on push and PR to `main`.
 - **AC:** green run on GitHub; README CI badge.

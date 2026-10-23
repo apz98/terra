@@ -4,6 +4,7 @@ All notable changes. Format and bump rules: [`docs/VERSIONING.md`](docs/VERSIONI
 Headings are game versions (`terra` crate) unless noted.
 
 ## [Unreleased]
+- docs: repository published at https://github.com/apz98/terra (T-0002)
 
 ## terra 0.0.0 — 2026-10-22
 Baseline, documentation only (no crates yet).
