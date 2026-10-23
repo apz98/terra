@@ -30,7 +30,8 @@ This is the loop for every task. `/next` enters it; nothing else should.
 9. **Commit** (Conventional Commit, trailer included), **tag** if the game version
    changed (`v<terra version>`), **push** with tags, and **check CI**: GitHub Actions
    (`.github/workflows/ci.yml`) runs `cargo xtask ci` on every push and PR to `main`.
-   Wait for it with `gh run watch $(gh run list -L 1 --json databaseId -q '.[0].databaseId') --exit-status`.
+   Wait for the run of the commit you pushed (it takes a few seconds to appear):
+   `sha=$(git rev-parse HEAD); until id=$(gh run list --commit $sha -L 1 --json databaseId -q '.[0].databaseId') && [ -n "$id" ]; do sleep 3; done; gh run watch $id --exit-status --compact`
    Red CI is the next task, ahead of everything else.
 10. **Close out.** Mark the task `done` in TASKS.md, update STATUS.md (last task,
    next task, versions, review counters). If the milestone is complete, run the

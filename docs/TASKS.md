@@ -88,6 +88,8 @@ Review of `2eea2bc` (2026-10-22). Ahead of T-0005 because CI will run this code 
 - Document system packages for wgpu/winit on Arch (vulkan-icd-loader, mesa/vulkan-intel,
   wayland, libxkbcommon, …) and Ubuntu (for CI and friends). Optional: `mold` for faster linking.
 - **AC:** README "Building on Linux" section; CI installs the same Ubuntu packages.
+- Note: `ubuntu-latest` is migrating to Ubuntu 26 (from 2026-10-19). Check package names
+  on the image CI actually uses, or pin `ubuntu-24.04` and say why.
 
 ### T-0008 M0 wrap-up — `todo`
 - Verify M0 exit criteria; archive M0 tasks; expand M1 tasks; remind Adrian to run `/code-review`.

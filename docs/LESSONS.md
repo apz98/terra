@@ -37,8 +37,18 @@ unless it is written here. This file is how Claude gets better across sessions.
    it doesn't exist (`git ls-files <path>`, Read). If it does, edit it instead.
 7. **Tools enforce documented invariants.** If a doc says "never X" or "X is a manual
    decision" and a tool can do X, the tool refuses without an explicit flag.
+8. **Wait on CI by commit SHA, not "latest run".** A run appears a few seconds after the
+   push; use the loop in WORKFLOW step 9 (`gh run list --commit <sha>`).
 
 ## Log (newest first)
+
+### 2026-10-22 — T-0005 CI on GitHub Actions
+- **What happened:** right after `git push`, `gh run list -L 1` returned no run, so
+  `gh run watch` got an empty ID and failed. The WORKFLOW command I had just written had
+  the same race. **Cause:** GitHub registers the run a few seconds after the push.
+  **Rule:** 8 (WORKFLOW step 9 now polls by commit SHA).
+- **Note:** first green run took 45 s with a cold cache. GitHub says `ubuntu-latest`
+  moves to Ubuntu 26 from 2026-10-19; T-0007 should check package names there.
 
 ### 2026-10-22 — T-0009 Fix `/code-review` findings on T-0004
 - **What happened:** a Python search-and-replace of `fixture.read(` missed three calls,
