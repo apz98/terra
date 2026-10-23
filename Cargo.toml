@@ -15,7 +15,9 @@ publish = false
 # `cargo xtask bump` can keep their requirements in sync.
 [workspace.dependencies]
 anyhow = "1.0.104"
+cargo_metadata = "0.23.1"
 semver = "1.0.28"
+tempfile = "3.27.0"
 toml_edit = "0.25.17"
 
 [workspace.lints.rust]

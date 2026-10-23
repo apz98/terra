@@ -20,11 +20,12 @@ const USAGE: &str = "\
 usage: cargo xtask <command>
 
 commands:
-  bump <crate> <major|minor|patch> [<crate> <level> ...] [--dry-run]
+  bump <crate> <major|minor|patch> [<crate> <level> ...] [--dry-run] [--allow-1.0]
       Bump crate versions, cascade to the crates that ship them, update internal
       version requirements and Cargo.lock, and print the `Bumps:` line for the
       commit message. Name every crate a commit changes in one call so the
-      highest level wins (docs/VERSIONING.md).
+      highest level wins (docs/VERSIONING.md). Refuses to take a 0.x crate to
+      1.0.0 without --allow-1.0. Rolls back if anything fails.
   check-docs
       Fail if the docs disagree with the code: crate tables, CHANGELOG heading,
       STATUS game version, one task in progress, unknown task IDs.

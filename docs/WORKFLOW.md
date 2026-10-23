@@ -21,7 +21,7 @@ This is the loop for every task. `/next` enters it; nothing else should.
 6. **Sync docs** using the matrix below. Rustdoc for every public item you added.
 7. **Version.** Determine the level per changed crate (`VERSIONING.md`), then run
    **one** `cargo xtask bump <crate> <level> [<crate> <level> …]` naming every changed
-   crate (try `--dry-run` first). Copy its `Bumps:` line into the commit message and
+   crate (try `--dry-run` first; `--allow-1.0` only when Adrian decides on 1.0). Copy its `Bumps:` line into the commit message and
    update `CHANGELOG.md`, the crate tables and STATUS; `check-docs` catches misses.
 8. **Retro.** Check the review triggers below and record any review now due in
    STATUS.md. Did anything fail, surprise you, or get corrected by Adrian during this

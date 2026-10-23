@@ -9,6 +9,21 @@ Headings are game versions (`terra` crate) unless noted.
   pinned toolchain 1.99.1, shared lints and build profiles (T-0003)
 - docs: repository published at https://github.com/apz98/terra (T-0002)
 
+## terra-xtask 0.1.1 — 2026-10-22
+Bumps: terra-xtask 0.1.0 → 0.1.1
+### Fixed
+Fixes for the `/code-review` findings on T-0004 (T-0009):
+- `bump` refuses to take a 0.x crate to 1.0.0 (directly or by cascade) without `--allow-1.0`
+- `bump` rolls back manifests and `Cargo.lock` if writing or `cargo update` fails, so a
+  retry can't bump twice. It writes only the manifests that change.
+- `bump` updates internal requirements in the root `[workspace.dependencies]`, and keeps
+  requirement operators (`=0.1.0` → `=0.2.0`, `~0.1` → `~0.2`)
+- `bump` releases pre-releases instead of skipping them (`0.3.0-alpha.1` + patch → `0.3.0`)
+- Workspace members and the dependency graph come from `cargo metadata` (honours `exclude`)
+- `check-docs` reads only `.claude/commands/` (not worktrees), doesn't follow symlinks, and
+  every check ignores fenced code blocks, matched by CommonMark rules
+- `ci` runs `check-docs` first
+
 ## terra-xtask 0.1.0 — 2026-10-22
 Bumps: terra-xtask 0.0.0 → 0.1.0
 ### Added

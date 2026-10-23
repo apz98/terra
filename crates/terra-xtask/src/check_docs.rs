@@ -6,6 +6,8 @@
 //! - the game version in `STATUS.md` is the `terra` crate version,
 //! - at most one task in `TASKS.md` is `in progress`,
 //! - every task ID mentioned outside code blocks exists in `TASKS.md` or the archive.
+//!
+//! Fenced code blocks are ignored by every check: they hold examples and templates.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -26,7 +28,9 @@ const ARCHIVE_DIR: &str = "docs/tasks/archive/";
 pub(crate) struct Docs(BTreeMap<String, String>);
 
 impl Docs {
-    /// Top-level `README.md`, `CLAUDE.md`, `CHANGELOG.md`, and all of `docs/` and `.claude/`.
+    /// Top-level `README.md`, `CLAUDE.md`, `CHANGELOG.md`, all of `docs/`, and the Claude
+    /// commands in `.claude/commands/`. The rest of `.claude/` is skipped: it holds Claude
+    /// Code worktrees (whole checkouts of other branches). Symlinks are not followed.
     pub(crate) fn load(root: &Path) -> Result<Self> {
         let mut files = BTreeMap::new();
         for file in ["README.md", "CLAUDE.md", CHANGELOG] {
@@ -37,7 +41,7 @@ impl Docs {
                 files.insert(file.to_owned(), text);
             }
         }
-        for dir in ["docs", ".claude"] {
+        for dir in ["docs", ".claude/commands"] {
             collect_markdown(root, &root.join(dir), &mut files)?;
         }
         Ok(Self(files))
@@ -49,14 +53,17 @@ impl Docs {
 }
 
 fn collect_markdown(root: &Path, dir: &Path, files: &mut BTreeMap<String, String>) -> Result<()> {
-    if !dir.is_dir() {
+    if !fs::symlink_metadata(dir).is_ok_and(|meta| meta.is_dir()) {
         return Ok(());
     }
     for entry in fs::read_dir(dir).with_context(|| format!("reading {}", dir.display()))? {
-        let path = entry?.path();
-        if path.is_dir() {
+        let entry = entry?;
+        let path = entry.path();
+        // `DirEntry::file_type` doesn't follow symlinks, so a link can't loop us.
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
             collect_markdown(root, &path, files)?;
-        } else if path.extension().is_some_and(|ext| ext == "md") {
+        } else if file_type.is_file() && path.extension().is_some_and(|ext| ext == "md") {
             let relative = path
                 .strip_prefix(root)?
                 .to_string_lossy()
@@ -111,8 +118,19 @@ struct CrateRow<'a> {
 
 /// The rows of the first Markdown table that has `Crate` and `Version` columns.
 fn crate_table(md: &str) -> Option<Vec<CrateRow<'_>>> {
-    let lines: Vec<(usize, &str)> = md.lines().enumerate().map(|(i, l)| (i + 1, l)).collect();
-    for table in lines.split(|(_, line)| !is_table_row(line)) {
+    let lines = prose_lines(md);
+    let mut start = 0;
+    while start < lines.len() {
+        // A table is a run of table rows on consecutive source lines.
+        let mut end = start;
+        while end < lines.len()
+            && is_table_row(lines[end].1)
+            && (end == start || lines[end].0 == lines[end - 1].0 + 1)
+        {
+            end += 1;
+        }
+        let table = &lines[start..end];
+        start = end.max(start + 1);
         let Some(((_, header), rows)) = table.split_first() else {
             continue;
         };
@@ -188,7 +206,7 @@ fn check_crate_table(path: &str, md: &str, crates: &BTreeMap<String, Version>) -
 
 fn check_changelog(md: &str, terra: &Version) -> Option<String> {
     let heading = format!("## terra {terra}");
-    let found = md.lines().any(|line| {
+    let found = prose_lines(md).into_iter().any(|(_, line)| {
         line.strip_prefix(&heading)
             .is_some_and(|rest| rest.is_empty() || rest.starts_with(char::is_whitespace))
     });
@@ -196,9 +214,8 @@ fn check_changelog(md: &str, terra: &Version) -> Option<String> {
 }
 
 fn check_status_game_version(md: &str, terra: &Version) -> Option<String> {
-    let Some((line, text)) = md
-        .lines()
-        .enumerate()
+    let Some((line, text)) = prose_lines(md)
+        .into_iter()
         .find(|(_, text)| is_table_row(text) && text.contains("**Game version**"))
     else {
         return Some(format!("{STATUS}: no **Game version** row"));
@@ -208,16 +225,14 @@ fn check_status_game_version(md: &str, terra: &Version) -> Option<String> {
         .and_then(|cell| cell.split_whitespace().next())
         .unwrap_or("");
     (stated != terra.to_string()).then(|| {
-        format!(
-            "{STATUS}:{}: game version is {stated} but the `terra` crate is {terra}",
-            line + 1
-        )
+        format!("{STATUS}:{line}: game version is {stated} but the `terra` crate is {terra}")
     })
 }
 
 fn check_in_progress(md: &str) -> Option<String> {
-    let active: Vec<&str> = md
-        .lines()
+    let active: Vec<&str> = prose_lines(md)
+        .into_iter()
+        .map(|(_, line)| line)
         .filter(|line| line.starts_with('#') && line.contains("`in progress"))
         .filter_map(|line| task_ids(line).into_iter().next())
         .collect();
@@ -276,8 +291,9 @@ fn task_ids(text: &str) -> Vec<&str> {
 /// Task IDs that a file defines: as a heading (`### T-0004 …`) or a sketch bullet
 /// (`- **T-0101** …`).
 fn defined_task_ids(md: &str) -> Vec<&str> {
-    md.lines()
-        .filter_map(|line| {
+    prose_lines(md)
+        .into_iter()
+        .filter_map(|(_, line)| {
             let rest = if line.starts_with('#') {
                 line.trim_start_matches('#').trim_start()
             } else {
@@ -291,21 +307,42 @@ fn defined_task_ids(md: &str) -> Vec<&str> {
         .collect()
 }
 
-/// `(line number, text)` of every line outside fenced code blocks. Examples live in
-/// code blocks and may name tasks that don't exist.
-fn prose_lines(md: &str) -> impl Iterator<Item = (usize, &str)> {
-    let mut in_fence = false;
-    md.lines()
-        .enumerate()
-        .filter(move |(_, line)| {
-            let line = line.trim_start();
-            if line.starts_with("```") || line.starts_with("~~~") {
-                in_fence = !in_fence;
-                return false;
-            }
-            !in_fence
-        })
-        .map(|(i, line)| (i + 1, line))
+/// `(line number, text)` of every line outside fenced code blocks. Examples and
+/// templates live in code blocks and may name tasks that don't exist.
+///
+/// Follows `CommonMark`: a fence is 3+ backticks or tildes indented at most 3 spaces, and
+/// only a fence of the same character, at least as long, with nothing after it closes it.
+fn prose_lines(md: &str) -> Vec<(usize, &str)> {
+    let mut open: Option<(u8, usize)> = None;
+    let mut prose = Vec::new();
+    for (i, line) in md.lines().enumerate() {
+        match (open, fence(line)) {
+            (None, Some((ch, len, _))) => open = Some((ch, len)),
+            (Some((ch, len)), Some((c, l, bare))) if c == ch && l >= len && bare => open = None,
+            (Some(_), _) => {}
+            (None, None) => prose.push((i + 1, line)),
+        }
+    }
+    prose
+}
+
+/// `(fence character, length, nothing follows it)` if `line` is a code fence.
+fn fence(line: &str) -> Option<(u8, usize, bool)> {
+    let rest = line.trim_start_matches(' ');
+    if line.len() - rest.len() > 3 {
+        return None;
+    }
+    let ch = *rest
+        .as_bytes()
+        .first()
+        .filter(|c| matches!(c, b'`' | b'~'))?;
+    let len = rest.bytes().take_while(|&c| c == ch).count();
+    let after = &rest[len..];
+    // A backtick fence's info string can't contain backticks (that's inline code).
+    if len < 3 || (ch == b'`' && after.contains('`')) {
+        return None;
+    }
+    Some((ch, len, after.trim().is_empty()))
 }
 
 /// Runs `cargo xtask check-docs`.
@@ -494,6 +531,78 @@ mod tests {
         assert_eq!(
             problems(&[("docs/tasks/archive/M0.md", archive), ("README.md", notes)]),
             Vec::<String>::new()
+        );
+    }
+
+    #[test]
+    fn fences_close_only_on_a_matching_fence() {
+        let notes = "\
+~~~
+```
+T-0901 inside a tilde fence
+~~~
+````md
+```
+T-0902 inside a longer fence
+```
+````
+```rust
+T-0903
+``` not a closing fence
+T-0904 still inside
+```
+T-0905 is prose
+";
+        assert_eq!(
+            problems(&[("docs/NOTES.md", notes)]),
+            ["docs/NOTES.md:15: T-0905 is not a task in docs/TASKS.md or docs/tasks/archive/"]
+        );
+    }
+
+    #[test]
+    fn fenced_templates_are_ignored_by_every_check() {
+        let tasks =
+            format!("{TASKS_MD}\n```md\n### T-0999 Template — `in progress`\n```\nSee T-0999.\n");
+        // The template neither counts as a second in-progress task nor defines T-0999.
+        assert_eq!(
+            problems(&[(TASKS, &tasks)]),
+            ["docs/TASKS.md:9: T-0999 is not a task in docs/TASKS.md or docs/tasks/archive/"]
+        );
+        // A fenced crate table is not the crate table.
+        let arch = format!("```\n| Crate | Version |\n|---|---|\n| `terra` | 9.9.9 |\n```\n{ARCH}");
+        assert_eq!(problems(&[(ARCHITECTURE, &arch)]), Vec::<String>::new());
+    }
+
+    #[test]
+    fn load_skips_worktrees_and_symlinks() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let write = |path: &str, text: &str| {
+            let path = root.join(path);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, text).unwrap();
+        };
+        write("README.md", "readme");
+        write("docs/STATUS.md", "status");
+        write("docs/tasks/archive/M0.md", "archive");
+        write(".claude/commands/next.md", "next");
+        write(
+            ".claude/worktrees/branch/docs/STATUS.md",
+            "another checkout",
+        );
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(root, root.join("docs/loop")).unwrap();
+
+        let docs = Docs::load(root).unwrap();
+        let paths: Vec<&str> = docs.0.keys().map(String::as_str).collect();
+        assert_eq!(
+            paths,
+            [
+                ".claude/commands/next.md",
+                "README.md",
+                "docs/STATUS.md",
+                "docs/tasks/archive/M0.md"
+            ]
         );
     }
 

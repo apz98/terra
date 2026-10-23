@@ -47,7 +47,7 @@ Interview, vision, architecture, roadmap, tasks, workflow, versioning, ADRs, `/n
 - **AC:** unit tests for bump cascade and each check; `cargo xtask ci` green.
 - **Docs:** VERSIONING (mechanics), WORKFLOW (commands), ARCHITECTURE.
 
-### T-0009 Fix `/code-review` findings on T-0004 — `todo`
+### T-0009 Fix `/code-review` findings on T-0004 — `done (terra-xtask 0.1.1)`
 Review of `2eea2bc` (2026-10-22). Ahead of T-0005 because CI will run this code on every push.
 - **Crates:** `terra-xtask`.
 1. **1.0 guard:** refuse any bump (direct or cascaded) that takes a `0.x` crate to `1.0.0`

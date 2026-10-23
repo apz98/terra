@@ -42,17 +42,26 @@ Internal tool crates (`terra-xtask`) follow the same rules but never cascade.
 
 - Versions live in each crate's own `Cargo.toml` (no `version.workspace`).
 - Internal deps use `path` plus a `version` requirement; `cargo xtask bump` keeps them in sync.
-- `cargo xtask bump <crate> <major|minor|patch> [<crate> <level> …] [--dry-run]`:
+- `cargo xtask bump <crate> <major|minor|patch> [<crate> <level> …] [--dry-run] [--allow-1.0]`:
   - bumps each named crate, then cascades to every crate that ships it through
     `[dependencies]` or `[build-dependencies]` (including `[target.*]` tables and renamed
     deps). `[dev-dependencies]` don't ship, so they don't cascade, but their requirements
-    are still updated.
+    are still updated. Membership and the dependency graph come from `cargo metadata`,
+    so `exclude`, globs and `foo.workspace = true` behave exactly as in a build.
   - **Name every crate a commit changes in one call.** The highest level per crate wins
     and each crate bumps once. Two separate `minor` calls would bump `terra` twice.
   - `terra-xtask` is never bumped by a cascade and never cascades.
-  - rewrites the manifests with `toml_edit` (comments and layout survive), runs
-    `cargo update --workspace` so `Cargo.lock` matches, and prints the `Bumps:` line
-    for the commit message. `--dry-run` only prints.
+  - **Refuses to take any `0.x` crate to `1.0.0`**, directly or through the cascade,
+    unless `--allow-1.0` is passed (see the 1.0.0 rule below).
+  - **Pre-releases are released, not skipped:** `0.3.0-alpha.1` + patch or minor →
+    `0.3.0`; + major → `1.0.0` (or `x.0.0` when minor and patch are already 0).
+  - Requirements keep their operator and precision: `0.1.0` → `0.2.0`, `=0.1.0` →
+    `=0.2.0`, `~0.1` → `~0.2`. Ranges like `>=0.1, <0.3` are refused: edit them by hand.
+    Internal entries in the root `[workspace.dependencies]` are updated too.
+  - rewrites only the manifests that change, with `toml_edit` (comments and layout
+    survive), runs `cargo update --workspace` so `Cargo.lock` matches, and prints the
+    `Bumps:` line for the commit message. If any step fails, the manifests and
+    `Cargo.lock` are restored, so it's safe to re-run. `--dry-run` only prints.
 - `cargo xtask check-docs` fails if a crate table (ARCHITECTURE, STATUS), the CHANGELOG
   heading, or the STATUS game version disagrees with the `Cargo.toml` versions.
 - **Tags:** only the game version is tagged: `v<terra version>` on the commit that

@@ -40,6 +40,15 @@ unless it is written here. This file is how Claude gets better across sessions.
 
 ## Log (newest first)
 
+### 2026-10-22 — T-0009 Fix `/code-review` findings on T-0004
+- **What happened:** a Python search-and-replace of `fixture.read(` missed three calls,
+  because `cargo fmt` had already split them as `fixture\n.read(`. **Cause:** a textual
+  edit after formatting. **Rule:** for mechanical renames across formatted Rust, match
+  with a whitespace-tolerant regex (`fixture\s*\.read\(`), then run `cargo fmt` again.
+- **Note:** tests now build throwaway workspaces with `tempfile` and run the real
+  `cargo metadata`/`cargo update` (offline-safe: only path dependencies). That's about 15
+  extra process spawns, and the whole xtask suite still runs in ~0.05 s.
+
 ### 2026-10-22 — T-0004 xtask `bump`, `check-docs`, `ci`
 - **What happened:** I created `clippy.toml` with a heredoc and overwrote an existing
   one, dropping `allow-expect-in-tests` and `allow-dbg-in-tests`. `git status` showed it

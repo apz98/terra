@@ -1,6 +1,6 @@
 [package]
 name = "terra-xtask"
-version = "0.1.0"
+version = "0.1.1"
 description = "Internal automation for the Terra workspace (run as `cargo xtask`)."
 edition.workspace = true
 rust-version.workspace = true
@@ -11,8 +11,12 @@ publish.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+cargo_metadata.workspace = true
 semver.workspace = true
 toml_edit.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true
