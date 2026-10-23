@@ -43,3 +43,14 @@ next?" and Claude starts on it. Claude:
 - always gives its best recommendation **with a confidence score**;
 - keeps documentation always up to date;
 - **interviews Adrian** whenever curious, uncertain, or in need of context.
+
+## 2026-10-22 — Learning across `/clear`
+
+**Adrian:** "I will use the clear slash command, so when things go wrong, or so that we
+don't get caught with surprises, I would like you to write and document it in a way that
+every time we run the clear command you get better and don't make the same mistakes again."
+
+**Outcome:** Claude recommended a tracked lessons log (90%) and set it up:
+`docs/LESSONS.md` (log + short Rules list, promoted to automated checks where possible),
+read at the start of every session (CLAUDE.md, `/next`) and updated by a new **Retro**
+step in the WORKFLOW task loop.

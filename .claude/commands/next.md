@@ -6,6 +6,7 @@ argument-hint: "[optional task id, e.g. T-0003, or a note]"
 You are resuming work on **Terra** after a context reset. Follow this exactly.
 
 ## 1. Load state (read, don't skim)
+- `docs/LESSONS.md`, the **Rules** section first. Apply them throughout this session.
 - `docs/STATUS.md`, `docs/TASKS.md`, `docs/OPEN_QUESTIONS.md`
 - `docs/WORKFLOW.md` (the task loop + definition of done) and `docs/VERSIONING.md`
 - `git status`, `git log --oneline -10`, and if a remote exists `gh run list -L 3`
@@ -34,5 +35,7 @@ If a review is due, open your report with a clear reminder, e.g.
 Unless blocked on Adrian's input, **begin the task immediately**. Don't wait for a
 "go ahead". Follow the task loop in `docs/WORKFLOW.md` through to a pushed,
 green, docs-synced, version-bumped commit. Then update STATUS.md and say what's next.
+Before committing, do the retro step from WORKFLOW.md: if anything went wrong or
+surprised you, add it to `docs/LESSONS.md` and mention it in the report.
 
 If an argument was given, treat it as the requested task or focus: $ARGUMENTS

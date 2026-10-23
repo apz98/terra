@@ -39,7 +39,9 @@ Interview, vision, architecture, roadmap, tasks, workflow, versioning, ADRs, `/n
   `terra-xtask` never cascades), prints a `Bumps:` line. `--dry-run`.
 - `check-docs`: fails if (a) a workspace crate is missing from the ARCHITECTURE crate table
   or its version differs, (b) CHANGELOG lacks a heading for the current `terra` version,
-  (c) STATUS.md game version ≠ `terra` version, (d) TASKS.md has more than one `in progress` task.
+  (c) STATUS.md game version ≠ `terra` version, (d) TASKS.md has more than one `in progress` task,
+  (e) a task ID (`T-nnnn`) mentioned in docs doesn't exist in TASKS.md or the archive
+  (from LESSONS.md, 2026-10-22).
 - `ci`: runs fmt check, clippy `-D warnings`, tests, `cargo doc` with `-D warnings`, check-docs.
 - Use a TOML-preserving editor (`toml_edit`) so formatting and comments survive.
 - **AC:** unit tests for bump cascade and each check; `cargo xtask ci` green.

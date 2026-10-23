@@ -21,13 +21,16 @@ This is the loop for every task. `/next` enters it; nothing else should.
 6. **Sync docs** using the matrix below. Rustdoc for every public item you added.
 7. **Version.** Determine bumps per `VERSIONING.md` (`cargo xtask bump` once it
    exists), update `CHANGELOG.md`.
-8. **Commit** (Conventional Commit, trailer included), **tag** if the game version
+8. **Retro.** Did anything fail, surprise you, or get corrected by Adrian during this
+   task? Log it in `docs/LESSONS.md` (what happened, cause, rule) and promote it to a
+   rule, a doc change, or an automated check. Goes in the same commit.
+9. **Commit** (Conventional Commit, trailer included), **tag** if the game version
    changed (`v<terra version>`), **push** with tags, and **check CI**.
-9. **Close out.** Mark the task `done` in TASKS.md, update STATUS.md (last task,
+10. **Close out.** Mark the task `done` in TASKS.md, update STATUS.md (last task,
    next task, versions, review counters). If the milestone is complete, run the
    milestone wrap-up below.
-10. **Report** to Adrian: what changed, how it was verified, the new version, any
-    review reminder, and the recommended next task with a confidence score.
+11. **Report** to Adrian: what changed, how it was verified, the new version, lessons
+    added, any review reminder, and the recommended next task with a confidence score.
 
 ## Definition of done
 
@@ -36,6 +39,7 @@ This is the loop for every task. `/next` enters it; nothing else should.
 - [ ] Public API documented; architecture/ADRs updated if structure changed
 - [ ] Versions bumped and CHANGELOG entry written
 - [ ] STATUS.md and TASKS.md updated
+- [ ] Retro done: new lessons (if any) in `LESSONS.md`
 - [ ] Committed, pushed, CI green
 
 ## Doc-sync matrix
@@ -52,6 +56,7 @@ This is the loop for every task. `/next` enters it; nothing else should.
 | Build steps, system deps, controls, how to play | `README.md` |
 | An answer from Adrian | `INTERVIEW.md`, `OPEN_QUESTIONS.md`, and whatever doc it affects |
 | A new uncertainty | `OPEN_QUESTIONS.md` |
+| A mistake, surprise, or correction | `LESSONS.md` (log + rule; automate if possible) |
 
 ## Review triggers (remind Adrian; don't run them yourself)
 

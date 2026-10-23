@@ -9,10 +9,11 @@ and never let docs drift from code.
 
 ## Start of every session (or after `/clear`)
 
-1. Read `docs/STATUS.md` (where we are), then `docs/TASKS.md` (what's next).
-2. Skim `docs/OPEN_QUESTIONS.md` for anything blocking the next task.
-3. `git status` + `git log --oneline -10` to confirm the tree matches STATUS.
-4. Follow `docs/WORKFLOW.md` for the task loop. `/next` automates steps 1–4.
+1. Read the **Rules in `docs/LESSONS.md`** (mistakes we've already made once).
+2. Read `docs/STATUS.md` (where we are), then `docs/TASKS.md` (what's next).
+3. Skim `docs/OPEN_QUESTIONS.md` for anything blocking the next task.
+4. `git status` + `git log --oneline -10` to confirm the tree matches STATUS.
+5. Follow `docs/WORKFLOW.md` for the task loop. `/next` automates steps 1–5.
 
 ## Non-negotiable rules
 
@@ -38,19 +39,24 @@ and never let docs drift from code.
    `cargo xtask check-docs` (one command once it exists: `cargo xtask ci`). Never commit red.
 7. **Commit + push.** Conventional Commit messages; one task ≈ one commit (split if
    large). Push to `origin main` and check CI (`gh run list -L 1`). Fix red CI first.
-8. **Review reminders.** Remind Adrian to run `/code-review` at the end of every
+8. **Learn across `/clear`.** Context is wiped often. Whenever something goes wrong or
+   surprises us (red gate/CI, wrong assumption, tool quirk, doc drift, a correction from
+   Adrian), log it in `docs/LESSONS.md` in the same commit and promote it to a rule, or
+   better, to an automated check. Never repeat a mistake that's already in LESSONS.md.
+9. **Review reminders.** Remind Adrian to run `/code-review` at the end of every
    milestone and after large/risky tasks, and `/security-review` before shipping
    anything touching networking, save files, mod loading, or a release to friends.
    Track this in the "Reviews" section of `docs/STATUS.md`.
-9. **Performance is a feature.** Respect budgets in `docs/PERFORMANCE.md`. Hot-path
-   changes need a benchmark or a measured before/after. No regressions without an ADR.
-10. **Assets & legal.** Never add Mojang/Minecraft assets, code, or names of their
+10. **Performance is a feature.** Respect budgets in `docs/PERFORMANCE.md`. Hot-path
+    changes need a benchmark or a measured before/after. No regressions without an ADR.
+11. **Assets & legal.** Never add Mojang/Minecraft assets, code, or names of their
     proprietary content files. All art is original or CC0 with attribution.
 
 ## Map of the docs
 
 | File | Purpose |
 |------|---------|
+| `docs/LESSONS.md` | Mistakes and surprises, turned into rules. Read the Rules every session |
 | `docs/STATUS.md` | "You are here": milestone, game version, last/next task, review debt |
 | `docs/TASKS.md` | Ordered, actionable tasks for current (+ next) milestone |
 | `docs/ROADMAP.md` | All milestones M0…M14+, scope and exit criteria |

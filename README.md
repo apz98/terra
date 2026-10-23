@@ -41,6 +41,7 @@ System packages for the graphics stack are documented in T-0007 (a Vulkan-capabl
 | Doc | What it's for |
 |---|---|
 | [STATUS](docs/STATUS.md) | Where the project is right now |
+| [LESSONS](docs/LESSONS.md) | Mistakes made once, turned into rules |
 | [ROADMAP](docs/ROADMAP.md) | Milestones M0–M14 |
 | [TASKS](docs/TASKS.md) | Ordered, actionable tasks |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | Crates, threads, data model |
