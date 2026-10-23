@@ -90,7 +90,12 @@ fast. `mold` isn't needed for now.
 
 | Key | Action |
 |---|---|
+| Click | Grab the mouse (the cursor hides; the mouse will turn the camera) |
+| `Escape` | Release the mouse (switching to another window releases it too) |
 | `F9` | Toggle vsync (temporary debug key until the settings menu in M4) |
+
+With `TERRA_LOG=info,terra_client=debug`, the fps and frame time are logged once a second
+(until the `F3` overlay).
 
 Closing the window quits.
 

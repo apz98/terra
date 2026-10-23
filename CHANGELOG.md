@@ -5,6 +5,22 @@ Headings are game versions (`terra` crate) unless noted.
 
 ## [Unreleased]
 
+## terra 0.4.0 — 2026-10-23
+Bumps: terra-client 0.2.0 → 0.3.0, terra 0.3.0 → 0.4.0
+### Added
+- Frame timing and input (T-0102). Clicking into the window grabs the mouse (locked on
+  Wayland, confined on X11) and hides the cursor. `Escape` or switching to another window
+  releases it. The click that grabs isn't passed on to the game.
+- terra-client: `timing::FrameTimer` gives each frame a delta time (at most 250 ms after a
+  stall), plus fps and average/max frame time over the last second, from a fixed-size ring
+  buffer. `input::InputState` tracks physical keys and mouse buttons held / pressed /
+  released this frame, and raw mouse movement (counted only while the mouse is grabbed).
+  Losing focus releases every held key and button.
+- With `TERRA_LOG=info,terra_client=debug`, fps and frame time are logged once a second.
+  `profiling` scopes around update and render, and one frame mark per frame for Tracy.
+### Changed
+- `F9` is read from the frame's input state, so it takes effect on the next frame.
+
 ## terra 0.3.0 — 2026-10-23
 Bumps: terra-render 0.1.0 → 0.2.0, terra-client 0.1.0 → 0.2.0, terra 0.2.0 → 0.3.0
 ### Fixed

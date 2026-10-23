@@ -4,11 +4,11 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | | |
 |---|---|
-| **Game version** (`terra`) | 0.3.0 (tag `v0.3.0`) |
+| **Game version** (`terra`) | 0.4.0 (tag `v0.4.0`) |
 | **Milestone** | M1 — First Light (M0 done in 0.1.0) |
-| **Last completed** | T-0110 Fix `/code-review` findings on T-0101 (0.3.0) |
+| **Last completed** | T-0102 Frame loop, timing and input (0.4.0) |
 | **In progress** | — |
-| **Next up** | T-0102 frame loop, timing and input |
+| **Next up** | T-0103 fly camera |
 | **Blocked** | — |
 | **Remote / CI** | https://github.com/apz98/terra (public) · CI: GitHub Actions (`ubuntu-24.04`) runs `cargo xtask ci` on push/PR to `main`; wait on it with `cargo xtask wait-ci` |
 
@@ -16,10 +16,10 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | Crate | Version |
 |---|---|
-| `terra` | 0.3.0 |
+| `terra` | 0.4.0 |
 | `terra-core` | 0.1.2 |
 | `terra-render` | 0.2.0 |
-| `terra-client` | 0.2.0 |
+| `terra-client` | 0.3.0 |
 | `terra-xtask` | 0.3.0 |
 
 `ARCHITECTURE.md` §2 is the authoritative crate table; `cargo xtask check-docs` checks both.
@@ -28,7 +28,7 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | Review | Last run | Due? |
 |---|---|---|
-| `/code-review` | 2026-10-23 (T-0101, `811d5b2..ec594f2`): 10 findings → T-0110 (7 fixed in 0.3.0, 3 no change). Before: 2026-10-22 (end of M0): 8 → T-0109 | Next: end of M1 |
+| `/code-review` | 2026-10-23 (T-0101, `811d5b2..ec594f2`): 10 findings → T-0110 (7 fixed in 0.3.0, 3 no change). Before: 2026-10-22 (end of M0): 8 → T-0109 | Next: end of M1 (to include T-0102: ~630 lines, about 40 % tests) |
 | `/security-review` | never | Not yet (first trigger: save files in M4, networking in M6) |
 
 ## Notes for the next session

@@ -1872,7 +1872,7 @@ dependencies = [
 
 [[package]]
 name = "terra"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "profiling",
@@ -1883,9 +1883,10 @@ dependencies = [
 
 [[package]]
 name = "terra-client"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "pollster",
+ "profiling",
  "terra-render",
  "thiserror 2.0.21",
  "tracing",

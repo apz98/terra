@@ -1,6 +1,6 @@
 [package]
 name = "terra-client"
-version = "0.2.0"
+version = "0.3.0"
 description = "Terra's game client: window, event loop, input, camera and UI on top of terra-render."
 edition.workspace = true
 rust-version.workspace = true
@@ -11,6 +11,7 @@ publish.workspace = true
 
 [dependencies]
 pollster.workspace = true
+profiling.workspace = true
 terra-render = { path = "../terra-render", version = "0.2.0" }
 thiserror.workspace = true
 tracing.workspace = true

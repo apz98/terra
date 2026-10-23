@@ -34,11 +34,11 @@ Crates are created by the task that first needs them, not before. All crates liv
 
 | Crate | Kind | Version | Status | Responsibility |
 |---|---|---|---|---|
-| `terra` | bin | 0.3.0 | runs the client; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
+| `terra` | bin | 0.4.0 | runs the client; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
 | `terra-core` | lib | 0.1.2 | `diagnostics` (logging, crash reports) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
 | `terra-xtask` | bin (internal) | 0.3.0 | `bump`, `check-docs`, `ci` (incl. `cargo deny check`), `wait-ci` | Automation: version bumps with cascade, doc-drift checks, all quality gates, waiting on GitHub CI; later asset tooling |
 | `terra-render` | lib | 0.2.0 | GPU setup (adapter overrides, device-loss tracking), window surface (vsync, resize, size clamp, lost/outdated recovery, retry/wait), clear | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
-| `terra-client` | lib | 0.2.0 | window + event loop (waits instead of spinning while hidden), sky-blue clear, `F9` vsync toggle | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
+| `terra-client` | lib | 0.3.0 | window + event loop (waits instead of spinning while hidden), frame timing (`timing`), input state and cursor grab (`input`), sky-blue clear, `F9` vsync toggle | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
 | `terra-world` | lib | — | planned (M2) | Block states, chunk columns/sections (palette storage), light, world access API |
 | `terra-worldgen` | lib | — | planned (M2) | Noise, density terrain, biomes, caves, ores, features, structures. Deterministic per seed |
 | `terra-data` | lib | — | planned (M2) | Registries + data-pack/resource-pack loading (blocks, items, recipes, textures, models) |
@@ -65,7 +65,7 @@ terra ─► terra-client + terra-sim      terra-server ─► terra-sim
 
 | Thread | Work |
 |---|---|
-| Main | winit event loop, input, client update, render submission (wgpu). *Implemented:* `terra_client::run()` owns it: the window is created in `resumed`, each `RedrawRequested` renders a frame and requests the next. With nothing to draw into (minimized or hidden window, or acquiring fails twice in a row) it waits 100 ms (`ControlFlow::WaitUntil`) or for `Resized`/`Occluded(false)` instead of spinning; a timer, since winit reports no `Occluded` on Wayland. A `GpuError` from the frame loop (device lost, surface can't be recreated) exits with that error |
+| Main | winit event loop, input, client update, render submission (wgpu). *Implemented:* `terra_client::run()` owns it: the window is created in `resumed`, each `RedrawRequested` runs one frame and requests the next. A frame is: `FrameTimer::tick` (delta time, clamped to 250 ms; fps and avg/max frame time over the last second from a fixed 8192-sample ring buffer), update (reads `InputState`: physical keys and mouse buttons held / pressed / released this frame, raw `DeviceEvent::MouseMotion` delta), render, `InputState::end_frame`, `profiling::finish_frame!()`, with `update`/`render` profiling scopes. Window and device events only feed `InputState` between frames. A click grabs the cursor (`Locked`, else `Confined`; hidden) and isn't passed on; mouse motion counts only while grabbed; `Escape` and focus loss release it, and focus loss also releases every held key and button. Frame stats are logged at `debug` once a second until the overlay (T-0106). With nothing to draw into (minimized or hidden window, or acquiring fails twice in a row) it waits 100 ms (`ControlFlow::WaitUntil`) or for `Resized`/`Occluded(false)` instead of spinning; a timer, since winit reports no `Occluded` on Wayland. The timer is paused for that wait, so the next frame simulates no time and the gap isn't a frame time. A `GpuError` from the frame loop (device lost, surface can't be recreated) exits with that error |
 | Integrated server | Fixed 20 TPS tick (50 ms budget): ECS systems, block updates, chunk tickets |
 | Worker pool (rayon) | Worldgen, lighting, meshing, (de)compression, save I/O prep. Jobs are prioritized by distance to the player and cancellable |
 | Net I/O (M6) | QUIC runtime (tokio, confined to `terra-net`) |

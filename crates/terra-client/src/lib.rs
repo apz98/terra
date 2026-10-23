@@ -1,10 +1,13 @@
-//! Terra's game client: the window, the event loop and (later) input, camera and UI.
+//! Terra's game client: the window, the event loop, input and frame timing, and (later)
+//! camera and UI.
 //!
 //! [`run`] opens the window and drives the frame loop on the calling thread, which must
 //! be the main thread. Rendering goes through `terra-render`; this crate owns no GPU
 //! code (`docs/adr/0003-crate-layout.md`).
 
 mod app;
+pub mod input;
+pub mod timing;
 
 use winit::event_loop::EventLoop;
 

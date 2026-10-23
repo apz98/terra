@@ -121,7 +121,7 @@ findings 1–5 are a 100 % CPU spin, a frozen window and three panics.
   `cargo xtask ci` green.
 - **Docs:** ARCHITECTURE §3 and §5, LESSONS, CHANGELOG, STATUS.
 
-### T-0102 Frame loop, timing and input — `todo`
+### T-0102 Frame loop, timing and input — `done (0.4.0)`
 - **Crates:** `terra-client`.
 - `FrameTimer`: delta time (clamped, e.g. ≤ 250 ms after a stall), fps and average/max
   frame time over the last second in a fixed-size ring buffer (no per-frame allocation).

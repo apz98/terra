@@ -51,12 +51,28 @@ unless it is written here. This file is how Claude gets better across sessions.
 10. **Look at the window, don't guess.** On the reference machine (Hyprland 0.56, Lua
     dispatch syntax) drive the game window with `hyprctl` and probe pixels with `grim`;
     the T-0101 log entry has the commands. Report what the pixels and logs showed.
+    Mouse clicks can't be synthesized there (T-0102): ask Adrian, with a temporary debug
+    log that shows what the game received.
 11. **Follow every error branch to the next iteration.** For a loop that handles failure
     statuses (surface, network, I/O), read in the library source what each branch really
     receives and what the loop does next: does it block, spin, retry forever, or panic in
     a nested call?
 
 ## Log (newest first)
+
+### 2026-10-23 — T-0102 Frame loop, timing and input
+- **What happened:** I couldn't click into the window to test the cursor grab. Hyprland
+  0.56 has no click dispatcher (`send_shortcut` with `key = "mouse:272"` returns `ok` and
+  does nothing), and `wtype` only types keys. **Fix:** a temporary `debug` log of the mouse
+  input, an AskUserQuestion with step-by-step instructions for Adrian, then the log to
+  confirm what Adrian saw. **Rule:** 10 (extended).
+- **Note:** the T-0101 note is confirmed: with vsync off the frame rate is uncapped (about
+  6000 fps clearing the screen on the reference machine), so skipping `pre_present_notify`
+  works. The 8192-sample frame-time ring buffer covers that.
+- **Note:** clippy 1.99 flags `Box::new([0u32; 8192])` (`large_stack_arrays`: built on the
+  stack first). Use `vec![0; N].into_boxed_slice()`.
+- **Note:** `TERRA_LOG=terra_client=debug` alone switches every other target off. Write
+  `info,terra_client=debug`.
 
 ### 2026-10-23 — T-0110 Fix `/code-review` findings on T-0101
 - **Note:** Hyprland 0.56 hides a window with `hyprctl dispatch 'hl.dsp.window.move({
