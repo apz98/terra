@@ -34,11 +34,11 @@ Crates are created by the task that first needs them, not before. All crates liv
 
 | Crate | Kind | Version | Status | Responsibility |
 |---|---|---|---|---|
-| `terra` | bin | 0.2.0 | runs the client; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
+| `terra` | bin | 0.3.0 | runs the client; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
 | `terra-core` | lib | 0.1.2 | `diagnostics` (logging, crash reports) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
 | `terra-xtask` | bin (internal) | 0.3.0 | `bump`, `check-docs`, `ci` (incl. `cargo deny check`), `wait-ci` | Automation: version bumps with cascade, doc-drift checks, all quality gates, waiting on GitHub CI; later asset tooling |
-| `terra-render` | lib | 0.1.0 | GPU setup (adapter overrides), window surface (vsync, resize, lost/outdated recovery), clear | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
-| `terra-client` | lib | 0.1.0 | window + event loop, sky-blue clear, `F9` vsync toggle | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
+| `terra-render` | lib | 0.2.0 | GPU setup (adapter overrides, device-loss tracking), window surface (vsync, resize, size clamp, lost/outdated recovery, retry/wait), clear | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
+| `terra-client` | lib | 0.2.0 | window + event loop (waits instead of spinning while hidden), sky-blue clear, `F9` vsync toggle | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
 | `terra-world` | lib | — | planned (M2) | Block states, chunk columns/sections (palette storage), light, world access API |
 | `terra-worldgen` | lib | — | planned (M2) | Noise, density terrain, biomes, caves, ores, features, structures. Deterministic per seed |
 | `terra-data` | lib | — | planned (M2) | Registries + data-pack/resource-pack loading (blocks, items, recipes, textures, models) |
@@ -65,7 +65,7 @@ terra ─► terra-client + terra-sim      terra-server ─► terra-sim
 
 | Thread | Work |
 |---|---|
-| Main | winit event loop, input, client update, render submission (wgpu). *Implemented:* `terra_client::run()` owns it: the window is created in `resumed`, each `RedrawRequested` renders a frame and requests the next |
+| Main | winit event loop, input, client update, render submission (wgpu). *Implemented:* `terra_client::run()` owns it: the window is created in `resumed`, each `RedrawRequested` renders a frame and requests the next. With nothing to draw into (minimized or hidden window, or acquiring fails twice in a row) it waits 100 ms (`ControlFlow::WaitUntil`) or for `Resized`/`Occluded(false)` instead of spinning; a timer, since winit reports no `Occluded` on Wayland. A `GpuError` from the frame loop (device lost, surface can't be recreated) exits with that error |
 | Integrated server | Fixed 20 TPS tick (50 ms budget): ECS systems, block updates, chunk tickets |
 | Worker pool (rayon) | Worldgen, lighting, meshing, (de)compression, save I/O prep. Jobs are prioritized by distance to the player and cancellable |
 | Net I/O (M6) | QUIC runtime (tokio, confined to `terra-net`) |
@@ -95,12 +95,19 @@ data for meshing). There's no shared mutable world between client and server.
   software last); `WGPU_BACKEND` limits the backends and `WGPU_ADAPTER_NAME` picks one by
   name (an error lists the alternatives). The adapter, backend, device type and driver are
   logged at `info`. wgpu validation errors keep wgpu's default handler, which panics, so
-  they end in a crash report. `Gpu::headless()` serves GPU tests.
+  they end in a crash report. A lost device is the exception: wgpu drops the errors it
+  causes and calls the device-lost callback, which `Gpu::lost()` records. The client then
+  stops with `GpuError::DeviceLost`. Recreating the device and every GPU resource is
+  later work. `Gpu::headless()` serves GPU tests.
 - *Implemented:* `WindowSurface` uses the first sRGB format and a present mode from
   `choose_present_mode(vsync, supported)` (on → `Fifo`; off → `Mailbox`, else `Immediate`,
-  else `Fifo`). It reconfigures on resize (a 0×0 minimized window skips frames), on
-  `Outdated` and after a `Suboptimal` frame, recreates the surface on `Lost`, and skips the
-  frame on `Timeout`/`Occluded`. On Wayland the client calls `pre_present_notify` only with
+  else `Fifo`). Its size is the window's, clamped to the device's
+  `max_texture_dimension_2d` (8192 with default limits). `acquire` returns a frame,
+  `Retry` or `Wait`. It reconfigures on resize (a 0×0 minimized window waits), on
+  `Outdated` at the window's current size, and once after a `Suboptimal` frame (not again
+  until the size changes). On `Lost` it recreates the surface and picks the format and
+  present mode again. `Timeout` retries. A second failure in a row, or `Occluded`, waits.
+  A `Validation` status means the device is lost (see above). On Wayland the client calls `pre_present_notify` only with
   vsync on: it aligns redraws to the compositor's frame callbacks, which would cap vsync-off
   frame rates.
 - Block textures in a **2D texture array** (16×16, mipmapped, nearest filtering).

@@ -1,13 +1,14 @@
 //! The winit application: window lifecycle, events and the frame loop.
 
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use terra_render::clear::{self, SKY_BLUE};
-use terra_render::{Gpu, WindowSurface};
+use terra_render::{Acquired, Gpu, GpuError, WindowSurface};
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
-use winit::event::{ElementState, KeyEvent, WindowEvent};
-use winit::event_loop::ActiveEventLoop;
+use winit::event::{ElementState, KeyEvent, StartCause, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, ControlFlow};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowAttributes, WindowId};
 
@@ -25,6 +26,11 @@ const DEFAULT_VSYNC: bool = true;
 /// The window's app id (Wayland) and class (X11), for compositor rules and taskbars.
 const APP_ID: &str = "terra";
 
+/// How long to wait before trying to draw again when there's nothing to draw into
+/// (minimized or hidden window). Short enough that a window shown again redraws without a
+/// visible delay (Wayland sends no event for it), long enough to cost no measurable CPU.
+const HIDDEN_RETRY: Duration = Duration::from_millis(100);
+
 /// The client application, driven by winit's event loop.
 pub(crate) struct App {
     title: String,
@@ -32,6 +38,14 @@ pub(crate) struct App {
     running: Option<Running>,
     /// The first fatal error; the event loop exits when it is set.
     error: Option<ClientError>,
+}
+
+/// When to draw the next frame.
+enum NextRedraw {
+    /// Right away.
+    Now,
+    /// After [`HIDDEN_RETRY`], or sooner if the window changes.
+    Later,
 }
 
 /// Everything that exists while the window is open.
@@ -94,9 +108,17 @@ fn with_app_id(attributes: WindowAttributes) -> WindowAttributes {
 }
 
 impl Running {
-    fn redraw(&mut self) {
-        let Some(frame) = self.surface.acquire(&self.gpu) else {
-            return;
+    /// Draws and presents a frame, if the surface has one to draw into.
+    fn redraw(&mut self) -> Result<NextRedraw, GpuError> {
+        let window = &self.window;
+        let window_size = || {
+            let size = window.inner_size();
+            (size.width, size.height)
+        };
+        let frame = match self.surface.acquire(&self.gpu, window_size)? {
+            Acquired::Frame(frame) => frame,
+            Acquired::Retry => return Ok(NextRedraw::Now),
+            Acquired::Wait => return Ok(NextRedraw::Later),
         };
         let view = frame
             .texture
@@ -108,10 +130,21 @@ impl Running {
             self.window.pre_present_notify();
         }
         self.gpu.queue.present(frame);
+        Ok(NextRedraw::Now)
     }
 }
 
 impl ApplicationHandler for App {
+    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+        // The `HIDDEN_RETRY` wait is over: try drawing again.
+        if let StartCause::ResumeTimeReached { .. } = cause {
+            event_loop.set_control_flow(ControlFlow::Wait);
+            if let Some(running) = &self.running {
+                running.window.request_redraw();
+            }
+        }
+    }
+
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         // Desktop platforms resume once. (Android would resume again after a suspend.)
         if self.running.is_some() {
@@ -138,6 +171,7 @@ impl ApplicationHandler for App {
                     .resize(&running.gpu, (size.width, size.height));
                 running.window.request_redraw();
             }
+            WindowEvent::Occluded(false) => running.window.request_redraw(),
             WindowEvent::KeyboardInput {
                 event:
                     KeyEvent {
@@ -151,10 +185,17 @@ impl ApplicationHandler for App {
                 let vsync = !running.surface.vsync();
                 running.surface.set_vsync(&running.gpu, vsync);
             }
-            WindowEvent::RedrawRequested => {
-                running.redraw();
-                running.window.request_redraw();
-            }
+            WindowEvent::RedrawRequested => match running.redraw() {
+                Ok(NextRedraw::Now) => running.window.request_redraw(),
+                // A timer rather than an event, since no event is sure to come: winit
+                // reports no `Occluded` on Wayland.
+                Ok(NextRedraw::Later) => event_loop
+                    .set_control_flow(ControlFlow::WaitUntil(Instant::now() + HIDDEN_RETRY)),
+                Err(error) => {
+                    self.error = Some(error.into());
+                    event_loop.exit();
+                }
+            },
             _ => {}
         }
     }

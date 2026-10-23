@@ -15,5 +15,5 @@ mod gpu;
 mod surface;
 
 pub use gpu::{ADAPTER_NAME_VAR, Gpu, GpuError, adapter_name_matches};
-pub use surface::{WindowSurface, choose_present_mode, choose_surface_format};
+pub use surface::{Acquired, WindowSurface, choose_present_mode, choose_surface_format};
 pub use wgpu;

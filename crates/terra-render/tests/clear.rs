@@ -1,32 +1,17 @@
 //! GPU test: clear an offscreen texture to the sky colour and read it back.
 //!
-//! Needs a GPU adapter (a software one such as lavapipe is fine). Without one it skips
-//! with a message, unless `TERRA_REQUIRE_GPU=1` (set in CI), where it fails.
+//! Needs a GPU adapter; see [`common::gpu_or_skip`].
 
+mod common;
+
+use common::gpu_or_skip;
 use terra_render::clear::{SKY_BLUE, encode_clear};
-use terra_render::{Gpu, wgpu};
-
-/// Set to `1` to make a missing GPU adapter a test failure instead of a skip.
-const REQUIRE_GPU_VAR: &str = "TERRA_REQUIRE_GPU";
+use terra_render::wgpu;
 
 /// The test texture's width and height.
 const SIZE: u32 = 64;
 /// 64 RGBA8 texels are 256 bytes, so each row meets `COPY_BYTES_PER_ROW_ALIGNMENT`.
 const ROW_BYTES: u32 = SIZE * 4;
-
-/// The headless GPU, or `None` (after saying why) if there is none and it isn't required.
-fn gpu_or_skip() -> Option<Gpu> {
-    match pollster::block_on(Gpu::headless()) {
-        Ok(gpu) => Some(gpu),
-        Err(error) if std::env::var(REQUIRE_GPU_VAR).is_ok_and(|v| v == "1") => {
-            panic!("{REQUIRE_GPU_VAR}=1 but there is no GPU: {error}")
-        }
-        Err(error) => {
-            eprintln!("skipping GPU test, no GPU ({error}); set {REQUIRE_GPU_VAR}=1 to fail");
-            None
-        }
-    }
-}
 
 #[test]
 fn clears_an_offscreen_texture_to_sky_blue() {

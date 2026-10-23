@@ -1,6 +1,6 @@
 [package]
 name = "terra-render"
-version = "0.1.0"
+version = "0.2.0"
 description = "Terra's wgpu renderer: GPU device, window surface, and (later) chunk meshes, textures and shaders."
 edition.workspace = true
 rust-version.workspace = true

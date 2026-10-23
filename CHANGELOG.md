@@ -5,6 +5,27 @@ Headings are game versions (`terra` crate) unless noted.
 
 ## [Unreleased]
 
+## terra 0.3.0 — 2026-10-23
+Bumps: terra-render 0.1.0 → 0.2.0, terra-client 0.1.0 → 0.2.0, terra 0.2.0 → 0.3.0
+### Fixed
+Fixes for the `/code-review` findings on T-0101 (T-0110):
+- A minimized or hidden window no longer spins a CPU core. When there's nothing to draw
+  into, the client retries every 100 ms and on `Resized`/`Occluded(false)`.
+- A lost GPU device stops the game with "the GPU device was lost: …". Before, the window
+  froze and the log said "validation error" every frame.
+- A window larger than the GPU's largest texture (8192 px with default limits) no longer
+  crashes the game. The surface is clamped to that size, with a warning.
+- Lost surface: the new surface's format and present modes are queried again. If it can't
+  be recreated, the game stops with an error instead of panicking on the old surface.
+- `Outdated` reconfigures at the window's current size, not the cached one. A
+  `Suboptimal` surface is reconfigured once, not every frame.
+### Changed
+- terra-render (breaking): `WindowSurface::acquire` takes a window-size closure and returns
+  `Result<Acquired, GpuError>` (`Frame`, `Retry` or `Wait`). New: `Gpu::lost()` and
+  `GpuError::DeviceLost`. A GPU test checks that a destroyed device is reported.
+### Other
+- docs: LESSONS rule 11, follow every error branch to the next iteration.
+
 ## terra 0.2.0 — 2026-10-23
 Bumps: terra-render 0.0.0 → 0.1.0, terra-client 0.0.0 → 0.1.0, terra 0.1.2 → 0.2.0
 ### Added

@@ -58,6 +58,20 @@ unless it is written here. This file is how Claude gets better across sessions.
 
 ## Log (newest first)
 
+### 2026-10-23 — T-0110 Fix `/code-review` findings on T-0101
+- **Note:** Hyprland 0.56 hides a window with `hyprctl dispatch 'hl.dsp.window.move({
+  workspace = "special:terra", silent = true, window = "address:0x…" })'` and brings it back
+  with `workspace = "e+0"` (`move_to_workspace` doesn't exist). There's no minimize, and
+  `xdotool` isn't installed, so a real 0×0 window can't be produced on the reference machine.
+  Run with `env -u WAYLAND_DISPLAY` to test X11 (Xwayland).
+- **Note:** under Xwayland, Mesa reports `Suboptimal` on the first frame and after every
+  resize; one reconfigure clears it. That's the path the T-0110 once-per-size guard covers.
+- **Note:** CPU measured from `/proc/<pid>/stat` (utime + stime, 100 ticks = 1 core-second):
+  ~2.6 % visible or hidden with vsync on, Wayland and X11. With vsync **off** a hidden
+  Wayland window keeps presenting at full speed (~45 % of a core): frames still succeed,
+  so nothing waits. That's expected for an uncapped mode, but a cap while hidden or
+  unfocused is worth considering with T-0102's frame timing.
+
 ### 2026-10-23 — `/code-review` of T-0101 (`811d5b2..ec594f2`)
 - **What happened:** T-0101 handled every `CurrentSurfaceTexture` variant, but it never
   checked what the frame loop does after each one. A skipped frame requests the next one

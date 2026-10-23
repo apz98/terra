@@ -1,7 +1,7 @@
 //! The GPU: instance, adapter, device and queue.
 
 use std::env;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use wgpu::wgt::WgpuHasDisplayHandle;
 
@@ -35,12 +35,18 @@ pub enum GpuError {
     /// The surface reports no formats for this adapter.
     #[error("the window surface supports no texture format on adapter {0:?}")]
     NoSurfaceFormat(String),
+    /// The GPU device was lost (driver reset, GPU hang, unplugged GPU). Everything on the
+    /// GPU is gone; Terra can't recreate it yet, so it stops.
+    #[error("the GPU device was lost: {0}")]
+    DeviceLost(String),
 }
 
 /// The GPU Terra renders with.
 ///
 /// Uncaptured wgpu errors (validation errors) keep wgpu's default handler, which
 /// panics: a validation error is a bug, and the crash report shows where it happened.
+/// Errors caused by a lost device are the exception: wgpu drops them and reports the
+/// loss once, which [`Gpu::lost`] records.
 #[derive(Debug)]
 pub struct Gpu {
     /// The wgpu instance. Kept to recreate a lost window surface.
@@ -51,6 +57,8 @@ pub struct Gpu {
     pub device: wgpu::Device,
     /// The device's queue.
     pub queue: wgpu::Queue,
+    /// Set by the device-lost callback: why the device was lost.
+    lost: Arc<OnceLock<String>>,
 }
 
 impl Gpu {
@@ -102,8 +110,12 @@ impl Gpu {
                 ..Default::default()
             })
             .await?;
-        device.set_device_lost_callback(|reason, message| {
+        let lost = Arc::new(OnceLock::new());
+        let lost_in_callback = Arc::clone(&lost);
+        device.set_device_lost_callback(move |reason, message| {
             tracing::error!(?reason, %message, "GPU device lost");
+            // wgpu calls this at most once per device, so the cell is always empty here.
+            let _ = lost_in_callback.set(lost_description(reason, &message));
         });
 
         Ok(Self {
@@ -111,7 +123,32 @@ impl Gpu {
             adapter,
             device,
             queue,
+            lost,
         })
+    }
+
+    /// Why the device was lost, or `None` while it works. Once lost, it stays lost:
+    /// nothing drawn after that reaches the screen.
+    pub fn lost(&self) -> Option<&str> {
+        self.lost.get().map(String::as_str)
+    }
+
+    /// [`GpuError::DeviceLost`] with the reason wgpu gave, if it has given one yet.
+    pub(crate) fn device_lost_error(&self) -> GpuError {
+        GpuError::DeviceLost(self.lost().unwrap_or("no reason given").to_owned())
+    }
+}
+
+/// How a device loss is described in [`GpuError::DeviceLost`].
+fn lost_description(reason: wgpu::DeviceLostReason, message: &str) -> String {
+    let reason = match reason {
+        wgpu::DeviceLostReason::Unknown => "driver error or reset",
+        wgpu::DeviceLostReason::Destroyed => "destroyed",
+    };
+    if message.is_empty() {
+        reason.to_owned()
+    } else {
+        format!("{reason} ({message})")
     }
 }
 
@@ -168,7 +205,7 @@ pub fn adapter_name_matches(name: &str, wanted: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::adapter_name_matches;
+    use super::{adapter_name_matches, lost_description};
 
     #[test]
     fn adapter_name_matches_substrings_ignoring_case() {
@@ -180,5 +217,16 @@ mod tests {
             "llvmpipe (LLVM 20.1.2, 256 bits)",
             "llvmpipe"
         ));
+    }
+
+    #[test]
+    fn device_loss_is_described_with_the_message_if_any() {
+        use wgpu::DeviceLostReason::{Destroyed, Unknown};
+
+        assert_eq!(lost_description(Destroyed, ""), "destroyed");
+        assert_eq!(
+            lost_description(Unknown, "VK_ERROR_DEVICE_LOST"),
+            "driver error or reset (VK_ERROR_DEVICE_LOST)"
+        );
     }
 }

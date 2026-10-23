@@ -82,7 +82,7 @@ afterwards it means auditing everything at once.
 - **Docs:** ARCHITECTURE §2 (two crates), §3 (main thread), §5; README (run, controls);
   `ci.yml` env; CHANGELOG.
 
-### T-0110 Fix `/code-review` findings on T-0101 (`811d5b2..ec594f2`) — `todo`
+### T-0110 Fix `/code-review` findings on T-0101 (`811d5b2..ec594f2`) — `done (0.3.0)`
 Review of T-0101 (2026-10-23): 10 findings, each checked against wgpu 30.0.1 and winit
 0.30.13 sources. 7 to fix (two of them with a different cause than reported), 3 need no
 change. Goes ahead of T-0102 because T-0102 builds its frame loop on this code, and
