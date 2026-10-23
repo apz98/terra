@@ -34,7 +34,9 @@ unless it is written here. This file is how Claude gets better across sessions.
    commands: `echo '-----'`, never `echo =====`.
 4. **Verify, don't assume.** Look up crate versions on crates.io (`curl -A terra-dev`, no
    personal data in headers) and toolchain versions with `rustup check` at task time;
-   confirm a command's output before reporting it.
+   read a new dependency's API in `~/.cargo/registry/src/*/<crate>-<version>/`, not from
+   memory; check Ubuntu package names in the archive's `Packages.xz`; confirm a command's
+   output before reporting it.
 5. **Things outside the AC need a callout.** If you make a choice the task didn't ask
    for, say so in the report and the commit message, and say how to undo it.
 6. **Look before you overwrite.** Before writing a file with `cat >`/`Write`, check that
@@ -46,8 +48,40 @@ unless it is written here. This file is how Claude gets better across sessions.
 9. **Scripted edits stay dumb and checked.** Use the Edit tool for one-off replacements.
    In a Python/sed edit script, no clever expressions (conditionals, joins) inside
    `replace` arguments, and check the file's line count or `git diff --stat` afterwards.
+10. **Look at the window, don't guess.** On the reference machine (Hyprland 0.56, Lua
+    dispatch syntax) drive the game window with `hyprctl` and probe pixels with `grim`;
+    the T-0101 log entry has the commands. Report what the pixels and logs showed.
 
 ## Log (newest first)
+
+### 2026-10-23 — T-0101 Window and GPU surface
+- **What happened:** wgpu 30's API differs from what I remembered: `get_current_texture`
+  returns a `CurrentSurfaceTexture` enum, frames are presented with `queue.present(frame)`,
+  the instance takes winit's display handle, and `util::initialize_adapter_from_env`
+  panics (`expect`) when no adapter matches. Reading the registry source first avoided
+  writing code against the old API. **Rule:** 4 (now names the registry source).
+- **What happened:** I guessed the Ubuntu package for the Khronos validation layer as
+  `vulkan-validation-layers` (Arch's name); in noble it's `vulkan-validationlayers`.
+  The T-0007 `Packages.xz` check caught it. **Rule:** 4 (promoted from that log entry).
+- **What happened:** `cargo deny check` failed on `ttf-parser` (unmaintained,
+  RUSTSEC-2026-0192), pulled in by winit's default `wayland-csd-adwaita` feature (title-bar
+  text). **Fix:** winit features without it, with `wayland-csd-adwaita-notitle`. That's what
+  T-0108 was for: one finding, not a hundred-crate audit.
+- **What happened:** `hyprctl dispatch <name> <args>` failed: Hyprland 0.56 takes Lua.
+  Working commands: `hyprctl clients -j` (find the window by `title`, get `at`/`size`/
+  `address`), `hyprctl dispatch 'hl.dsp.focus({ window = "address:0x…" })'`,
+  `'hl.dsp.window.float({ action = "enable" })'`, `'hl.dsp.window.resize({ x = 900, y = 500 })'`
+  (active window), `'hl.dsp.send_shortcut({ mods = "", key = "F9" })'`,
+  `'hl.dsp.window.close()'`. Pixel probe: `grim -t ppm -g "X,Y 1x1" - | tail -c 3 | od
+  -An -tu1` prints R G B. Screenshots: `grim -g "X,Y WxH" file.png`, then Read the PNG.
+  **Rule:** 10.
+- **Note:** winit sets no Wayland app id by default (`class` was empty in `hyprctl clients`);
+  the client sets `terra`. Not in the task's AC (Rule 5): remove `with_app_id` to undo.
+- **Note:** `pre_present_notify()` on Wayland aligns `RedrawRequested` with frame callbacks,
+  which would cap vsync-off frame rates at the refresh rate; it's only called with vsync on.
+  T-0102/T-0107 should confirm vsync-off fps is really uncapped once the counter exists.
+- **Note:** clippy 1.99 suggests `as_chunks::<N>()` over `chunks_exact(N)` and
+  `TextureViewDescriptor::default()` over `&Default::default()`.
 
 ### 2026-10-23 — T-0108 License and advisory checks (`cargo-deny`)
 - **What happened:** again, the session's first command batched `cat docs/LESSONS.md` with

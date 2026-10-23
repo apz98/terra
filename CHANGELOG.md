@@ -5,6 +5,28 @@ Headings are game versions (`terra` crate) unless noted.
 
 ## [Unreleased]
 
+## terra 0.2.0 — 2026-10-23
+Bumps: terra-render 0.0.0 → 0.1.0, terra-client 0.0.0 → 0.1.0, terra 0.1.2 → 0.2.0
+### Added
+- The game opens a window: `Terra <version>`, 1280×720 logical, resizable, Wayland with
+  X11 as fallback, app id `terra`. It's cleared to sky blue (`#87CEEB`) every frame and
+  closes cleanly. `F9` toggles vsync (a debug key until the M4 settings menu) (T-0101).
+- New crate `terra-render` (wgpu 30): GPU setup with the highest-performance adapter,
+  `WGPU_BACKEND`/`WGPU_ADAPTER_NAME` overrides (a name that matches nothing is an error
+  listing the adapters found), the adapter logged at `info`; a window surface with an
+  sRGB format, vsync → present mode (`Fifo`; off: `Mailbox`, `Immediate`, `Fifo`),
+  resize, and recovery from outdated, suboptimal and lost surfaces.
+- New crate `terra-client` (winit 0.30): the window, the event loop and the frame loop.
+  `terra` now runs it instead of printing its version.
+- A headless GPU test clears an offscreen texture and reads it back. CI runs it on
+  lavapipe with `TERRA_REQUIRE_GPU=1`; without a GPU it skips locally.
+### Other
+- winit is built without `wayland-csd-adwaita` (`-notitle` instead): its title-bar font
+  rendering pulls in the unmaintained `ttf-parser` (RUSTSEC-2026-0192), which
+  `cargo deny check` rejects. Wayland decorations stay; their title text goes.
+- docs: README lists the controls, the GPU environment variables and the optional Vulkan
+  validation layer.
+
 ## terra 0.1.2 — 2026-10-23
 Bumps: terra-core 0.1.1 → 0.1.2, terra 0.1.1 → 0.1.2, terra-xtask 0.2.1 → 0.3.0
 ### Added

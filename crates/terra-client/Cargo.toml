@@ -1,0 +1,20 @@
+[package]
+name = "terra-client"
+version = "0.1.0"
+description = "Terra's game client: window, event loop, input, camera and UI on top of terra-render."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+pollster.workspace = true
+terra-render = { path = "../terra-render", version = "0.1.0" }
+thiserror.workspace = true
+tracing.workspace = true
+winit.workspace = true
+
+[lints]
+workspace = true

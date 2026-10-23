@@ -60,7 +60,7 @@ afterwards it means auditing everything at once.
 - **Docs:** README (dev tools), WORKFLOW step 3 + step 5, CHANGELOG. (ADRs are immutable, so
   ADR 0010's "added later" stays; CHANGELOG records that it's now enforced.)
 
-### T-0101 Window and GPU surface (`terra-client`, `terra-render`) — `todo`
+### T-0101 Window and GPU surface (`terra-client`, `terra-render`) — `done (0.2.0)`
 - **Crates:** new `terra-render` and `terra-client` (lib). `terra` calls `terra_client::run()`.
 - winit `ApplicationHandler`: create the window in `resumed` (title `Terra <version>`,
   1280×720 logical, resizable). Wayland natively, X11 as winit's fallback.

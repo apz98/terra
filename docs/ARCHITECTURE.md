@@ -1,7 +1,7 @@
 # Architecture
 
-Status: **scaffolded** (M0). The workspace and first crates exist; most sections are still
-*(planned)* and become *(implemented)* as tasks land. Keep this file true to the code.
+Status: **M1 in progress**. The game opens a window and clears it on the GPU; most sections
+are still *(planned)* and become *(implemented)* as tasks land. Keep this file true to the code.
 
 ## 1. Big picture
 
@@ -34,11 +34,11 @@ Crates are created by the task that first needs them, not before. All crates liv
 
 | Crate | Kind | Version | Status | Responsibility |
 |---|---|---|---|---|
-| `terra` | bin | 0.1.2 | prints version; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
+| `terra` | bin | 0.2.0 | runs the client; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
 | `terra-core` | lib | 0.1.2 | `diagnostics` (logging, crash reports) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
 | `terra-xtask` | bin (internal) | 0.3.0 | `bump`, `check-docs`, `ci` (incl. `cargo deny check`), `wait-ci` | Automation: version bumps with cascade, doc-drift checks, all quality gates, waiting on GitHub CI; later asset tooling |
-| `terra-render` | lib | — | planned (M1) | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
-| `terra-client` | lib | — | planned (M1) | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
+| `terra-render` | lib | 0.1.0 | GPU setup (adapter overrides), window surface (vsync, resize, lost/outdated recovery), clear | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
+| `terra-client` | lib | 0.1.0 | window + event loop, sky-blue clear, `F9` vsync toggle | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
 | `terra-world` | lib | — | planned (M2) | Block states, chunk columns/sections (palette storage), light, world access API |
 | `terra-worldgen` | lib | — | planned (M2) | Noise, density terrain, biomes, caves, ores, features, structures. Deterministic per seed |
 | `terra-data` | lib | — | planned (M2) | Registries + data-pack/resource-pack loading (blocks, items, recipes, textures, models) |
@@ -61,11 +61,11 @@ terra-render ◄─ terra-client (uses net, mesh, world, data)
 terra ─► terra-client + terra-sim      terra-server ─► terra-sim
 ```
 
-## 3. Threads and scheduling *(planned)*
+## 3. Threads and scheduling *(main thread implemented; the rest planned)*
 
 | Thread | Work |
 |---|---|
-| Main | winit event loop, input, client update, render submission (wgpu) |
+| Main | winit event loop, input, client update, render submission (wgpu). *Implemented:* `terra_client::run()` owns it: the window is created in `resumed`, each `RedrawRequested` renders a frame and requests the next |
 | Integrated server | Fixed 20 TPS tick (50 ms budget): ECS systems, block updates, chunk tickets |
 | Worker pool (rayon) | Worldgen, lighting, meshing, (de)compression, save I/O prep. Jobs are prioritized by distance to the player and cancellable |
 | Net I/O (M6) | QUIC runtime (tokio, confined to `terra-net`) |
@@ -87,9 +87,22 @@ data for meshing). There's no shared mutable world between client and server.
 - **Chunk lifecycle:** `Requested → Generating → Lighting → Ready → (Meshing on client)`,
   driven by load tickets around players (render/simulation distance).
 
-## 5. Rendering *(planned)*
+## 5. Rendering *(device and surface implemented; the rest planned)*
 
 - wgpu (Vulkan on Linux, DX12/Vulkan on Windows), WGSL shaders, reverse-Z depth.
+- *Implemented (T-0101):* `terra_render::Gpu` holds the instance, adapter, device and queue.
+  The adapter is the highest-performance one wgpu offers (discrete before integrated,
+  software last); `WGPU_BACKEND` limits the backends and `WGPU_ADAPTER_NAME` picks one by
+  name (an error lists the alternatives). The adapter, backend, device type and driver are
+  logged at `info`. wgpu validation errors keep wgpu's default handler, which panics, so
+  they end in a crash report. `Gpu::headless()` serves GPU tests.
+- *Implemented:* `WindowSurface` uses the first sRGB format and a present mode from
+  `choose_present_mode(vsync, supported)` (on → `Fifo`; off → `Mailbox`, else `Immediate`,
+  else `Fifo`). It reconfigures on resize (a 0×0 minimized window skips frames), on
+  `Outdated` and after a `Suboptimal` frame, recreates the surface on `Lost`, and skips the
+  frame on `Timeout`/`Occluded`. On Wayland the client calls `pre_present_notify` only with
+  vsync on: it aligns redraws to the compositor's frame callbacks, which would cap vsync-off
+  frame rates.
 - Block textures in a **2D texture array** (16×16, mipmapped, nearest filtering).
 - Meshes are built on workers by `terra-mesh`. Vertices are packed (≈8 bytes/quad-vertex or
   vertex-pulling from a storage buffer), allocated in large shared GPU buffers,

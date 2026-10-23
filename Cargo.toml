@@ -18,6 +18,7 @@ anyhow = "1.0.104"
 cargo_metadata = "0.23.1"
 etcetera = "0.11.0"
 jiff = { version = "0.2.38", default-features = false, features = ["std"] }
+pollster = "1.0.1"
 profiling = "1.0.18"
 semver = "1.0.28"
 tempfile = "3.27.0"
@@ -25,6 +26,17 @@ thiserror = "2.0.21"
 toml_edit = "0.25.17"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+wgpu = "30.0.1"
+# Default features minus `wayland-csd-adwaita`, whose title-bar text pulls in the
+# unmaintained `ttf-parser` (RUSTSEC-2026-0192). `-notitle` keeps the client-side
+# decorations GNOME needs, without the title text.
+winit = { version = "0.30.13", default-features = false, features = [
+    "rwh_06",
+    "x11",
+    "wayland",
+    "wayland-dlopen",
+    "wayland-csd-adwaita-notitle",
+] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

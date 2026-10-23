@@ -35,7 +35,7 @@ cargo install --locked cargo-deny@0.20.2
 ```
 
 ```sh
-cargo run -p terra                 # run the game (currently prints its version)
+cargo run -p terra                 # run the game (currently a sky-blue window; see Controls)
 cargo run -p terra --features profile-tracy   # same, streaming profiling scopes to Tracy
 cargo build --workspace            # build everything
 cargo test --workspace             # run all tests
@@ -75,6 +75,10 @@ CI installs exactly that file, so it can't go stale:
 sed 's/#.*//' .github/ubuntu-packages.txt | xargs sudo apt-get install -y --no-install-recommends
 ```
 
+**Debugging:** debug builds turn on wgpu's validation, and any validation error ends the
+game with a crash report. Installing the Khronos layer (`vulkan-validation-layers` on Arch,
+`vulkan-validationlayers` on Ubuntu) adds the driver-level Vulkan checks on top.
+
 **Check Vulkan:** `vulkaninfo --summary` should list your GPU under `Devices:`. If it
 lists only `llvmpipe`, Vulkan found no hardware driver and Terra will run on the CPU
 (very slowly).
@@ -82,11 +86,22 @@ lists only `llvmpipe`, Vulkan found no hardware driver and Terra will run on the
 **Linking:** Rust already links with its bundled `rust-lld` on x86-64 Linux, which is
 fast. `mold` isn't needed for now.
 
+### Controls
+
+| Key | Action |
+|---|---|
+| `F9` | Toggle vsync (temporary debug key until the settings menu in M4) |
+
+Closing the window quits.
+
 ### Environment variables
 
 | Variable | Effect |
 |---|---|
 | `TERRA_LOG` | Log filter in [`tracing` `EnvFilter`](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) syntax, e.g. `debug` or `info,terra_core=trace`. Default `info`. Logs go to stderr. |
+| `WGPU_BACKEND` | Graphics backends to try, e.g. `vulkan` or `gl`. Default: all available. |
+| `WGPU_ADAPTER_NAME` | Use the GPU whose name contains this (ignoring case), e.g. `intel` or `llvmpipe`. If none matches, Terra exits and lists the GPUs it found. Default: the fastest GPU. |
+| `TERRA_REQUIRE_GPU` | Tests only: `1` makes GPU tests fail instead of skip when there is no GPU. CI sets it. |
 
 If Terra crashes, it writes a crash report to `~/.local/share/terra/crash-reports/`
 (Linux; `%APPDATA%\Terra\data\crash-reports\` on Windows) and prints the file's path.

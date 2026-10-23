@@ -1,7 +1,7 @@
 //! Terra, a Minecraft-style voxel sandbox.
 //!
-//! This is the game binary. It will wire the client (`terra-client`) to an
-//! integrated server (`terra-sim`); see `docs/ARCHITECTURE.md`. The version of
+//! This is the game binary. It runs the client (`terra-client`) and will wire it to
+//! an integrated server (`terra-sim`); see `docs/ARCHITECTURE.md`. The version of
 //! this crate is the game version players see.
 
 use terra_core::diagnostics;
@@ -19,6 +19,6 @@ fn main() -> anyhow::Result<()> {
     profiling::register_thread!("main");
 
     tracing::info!("Terra {VERSION}");
-    println!("Terra {VERSION}");
+    terra_client::run(VERSION)?;
     Ok(())
 }

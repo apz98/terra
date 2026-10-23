@@ -35,7 +35,7 @@ jobs:
       # Actions are pinned by commit SHA; the comment names the release.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The Ubuntu packages from README "Building on Linux". `vulkaninfo` proves Vulkan works
-      # here (lavapipe, a software renderer), which GPU tests will rely on later.
+      # here (lavapipe, a software renderer), which the GPU tests rely on.
       - name: Install system packages
         run: |
           sudo apt-get update
@@ -52,3 +52,7 @@ jobs:
           tool: cargo-deny@0.20.2
       - name: cargo xtask ci
         run: cargo xtask ci
+        env:
+          # GPU tests (e.g. terra-render's offscreen clear) skip without an adapter; here
+          # lavapipe is always there, so a missing adapter must fail instead.
+          TERRA_REQUIRE_GPU: "1"
