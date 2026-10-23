@@ -47,6 +47,28 @@ Interview, vision, architecture, roadmap, tasks, workflow, versioning, ADRs, `/n
 - **AC:** unit tests for bump cascade and each check; `cargo xtask ci` green.
 - **Docs:** VERSIONING (mechanics), WORKFLOW (commands), ARCHITECTURE.
 
+### T-0009 Fix `/code-review` findings on T-0004 — `todo`
+Review of `2eea2bc` (2026-10-22). Ahead of T-0005 because CI will run this code on every push.
+- **Crates:** `terra-xtask`.
+1. **1.0 guard:** refuse any bump (direct or cascaded) that takes a `0.x` crate to `1.0.0`
+   unless `--allow-1.0` is given (VERSIONING: 1.0.0 is a manual M11 decision).
+2. **Atomic bump:** keep the original manifest and `Cargo.lock` text; if writing or
+   `cargo update --workspace` fails, restore them so a retry can't double-bump.
+3. **Doc discovery:** scan only `.claude/commands/` (not `.claude/worktrees/`), and don't
+   follow symlinked directories.
+4. **Root `[workspace.dependencies]`:** update internal crates' requirements there too.
+5. **Fences:** track the opening fence's character and length; every check (crate tables,
+   in-progress count, task definitions, task mentions) ignores fenced blocks.
+6. **Discovery via `cargo metadata --no-deps`** (members, `exclude`, manifest paths, the
+   dependency graph with kinds, renames and targets); keep `toml_edit` only for edits.
+7. **Keep requirement operators:** `=0.1.0` → `=0.2.0`, `~0.1` → `~0.2` (via `semver::VersionReq`).
+8. **Pre-releases:** `0.3.0-alpha.1` + patch → `0.3.0` (+ minor → `0.3.0` when patch is 0;
+   + major → `1.0.0` when minor and patch are 0), as cargo-release does.
+9. **`ci` order:** run check-docs first (it takes milliseconds).
+10. **Save only changed manifests.**
+- **AC:** a unit test per finding (2 via an injected failing `cargo update`); `cargo xtask ci` green.
+- **Docs:** VERSIONING (guard, pre-release rule, operators), README/WORKFLOW (`--allow-1.0`), CHANGELOG, STATUS.
+
 ### T-0005 CI on GitHub Actions — `todo`
 - `.github/workflows/ci.yml`: ubuntu-latest, toolchain from `rust-toolchain.toml`,
   `Swatinem/rust-cache`, run `cargo xtask ci`. Trigger on push and PR to `main`.

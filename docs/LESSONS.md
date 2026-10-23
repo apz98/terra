@@ -35,6 +35,8 @@ unless it is written here. This file is how Claude gets better across sessions.
    for, say so in the report and the commit message, and say how to undo it.
 6. **Look before you overwrite.** Before writing a file with `cat >`/`Write`, check that
    it doesn't exist (`git ls-files <path>`, Read). If it does, edit it instead.
+7. **Tools enforce documented invariants.** If a doc says "never X" or "X is a manual
+   decision" and a tool can do X, the tool refuses without an explicit flag.
 
 ## Log (newest first)
 
@@ -46,6 +48,13 @@ unless it is written here. This file is how Claude gets better across sessions.
 - **Automated:** the 2026-10-22 T-0003 entry's task-ID drift is now checked by
   `check-docs` (IDs outside fenced code blocks must be defined in TASKS.md or the
   archive). Rule 2 was narrowed to match.
+- **What happened:** the `/code-review` reminder went into STATUS in a follow-up commit
+  rather than the task commit. **Cause:** I checked the review triggers after committing.
+  **Rule:** check the WORKFLOW review triggers in the retro step, before committing.
+- **What happened:** `/code-review` found 10 issues (T-0009). The worst, `bump major`
+  silently making 0.x → 1.0.0, was a guard I had thought of and dropped as
+  over-engineering. **Cause:** I treated a documented invariant ("1.0.0 is a manual
+  decision") as something the user would remember. **Rule:** 7.
 - **Note:** clippy pedantic rejects `format!` collected into a `String` (`format_collect`)
   and `push_str(&format!(…))` (`format_push_string`). Use `writeln!(s, …)` with
   `std::fmt::Write`.

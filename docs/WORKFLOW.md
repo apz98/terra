@@ -23,7 +23,8 @@ This is the loop for every task. `/next` enters it; nothing else should.
    **one** `cargo xtask bump <crate> <level> [<crate> <level> …]` naming every changed
    crate (try `--dry-run` first). Copy its `Bumps:` line into the commit message and
    update `CHANGELOG.md`, the crate tables and STATUS; `check-docs` catches misses.
-8. **Retro.** Did anything fail, surprise you, or get corrected by Adrian during this
+8. **Retro.** Check the review triggers below and record any review now due in
+   STATUS.md. Did anything fail, surprise you, or get corrected by Adrian during this
    task? Log it in `docs/LESSONS.md` (what happened, cause, rule) and promote it to a
    rule, a doc change, or an automated check. Goes in the same commit.
 9. **Commit** (Conventional Commit, trailer included), **tag** if the game version

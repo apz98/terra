@@ -8,7 +8,7 @@ _Update this file in every commit that changes progress. Keep it short._
 | **Milestone** | M0 — Foundations |
 | **Last completed** | T-0004 xtask: `bump`, `check-docs`, `ci` (terra-xtask 0.1.0) |
 | **In progress** | — |
-| **Next up** | T-0005 CI on GitHub Actions |
+| **Next up** | T-0009 Fix `/code-review` findings on T-0004, then T-0005 CI |
 | **Blocked** | — |
 | **Remote / CI** | https://github.com/apz98/terra (public) · no CI yet |
 
@@ -26,7 +26,7 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | Review | Last run | Due? |
 |---|---|---|
-| `/code-review` | never | **Due**: T-0004 added ~1,000 lines of xtask code (>500-line trigger); also at the end of M0 |
+| `/code-review` | 2026-10-22 (T-0004, `2eea2bc`): 10 findings → T-0009 | Next at the end of M0 |
 | `/security-review` | never | Not yet (first trigger: save files in M4, networking in M6) |
 
 ## Notes for the next session
