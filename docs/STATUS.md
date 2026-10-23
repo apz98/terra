@@ -26,7 +26,7 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | Review | Last run | Due? |
 |---|---|---|
-| `/code-review` | never | Not yet (due at the end of M0) |
+| `/code-review` | never | **Due**: T-0004 added ~1,000 lines of xtask code (>500-line trigger); also at the end of M0 |
 | `/security-review` | never | Not yet (first trigger: save files in M4, networking in M6) |
 
 ## Notes for the next session
