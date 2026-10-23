@@ -28,7 +28,10 @@ This is the loop for every task. `/next` enters it; nothing else should.
    task? Log it in `docs/LESSONS.md` (what happened, cause, rule) and promote it to a
    rule, a doc change, or an automated check. Goes in the same commit.
 9. **Commit** (Conventional Commit, trailer included), **tag** if the game version
-   changed (`v<terra version>`), **push** with tags, and **check CI**.
+   changed (`v<terra version>`), **push** with tags, and **check CI**: GitHub Actions
+   (`.github/workflows/ci.yml`) runs `cargo xtask ci` on every push and PR to `main`.
+   Wait for it with `gh run watch $(gh run list -L 1 --json databaseId -q '.[0].databaseId') --exit-status`.
+   Red CI is the next task, ahead of everything else.
 10. **Close out.** Mark the task `done` in TASKS.md, update STATUS.md (last task,
    next task, versions, review counters). If the milestone is complete, run the
    milestone wrap-up below.

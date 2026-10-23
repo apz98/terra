@@ -69,9 +69,10 @@ Review of `2eea2bc` (2026-10-22). Ahead of T-0005 because CI will run this code 
 - **AC:** a unit test per finding (2 via an injected failing `cargo update`); `cargo xtask ci` green.
 - **Docs:** VERSIONING (guard, pre-release rule, operators), README/WORKFLOW (`--allow-1.0`), CHANGELOG, STATUS.
 
-### T-0005 CI on GitHub Actions — `todo`
+### T-0005 CI on GitHub Actions — `done (no bump)`
 - `.github/workflows/ci.yml`: ubuntu-latest, toolchain from `rust-toolchain.toml`,
   `Swatinem/rust-cache`, run `cargo xtask ci`. Trigger on push and PR to `main`.
+  Actions pinned by commit SHA; read-only token; stale runs cancelled.
 - **AC:** green run on GitHub; README CI badge.
 - **Docs:** README, WORKFLOW (CI check step).
 
