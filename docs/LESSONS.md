@@ -24,8 +24,8 @@ unless it is written here. This file is how Claude gets better across sessions.
 
 1. **Format before checking.** Run `cargo fmt` after writing code, then `cargo xtask ci`.
    Don't hand-wrap lines and hope.
-2. **Grep for stale references when finishing a task.** Search docs for anything renamed
-   or moved, and for "once it exists"/"arrives in" notes about what you just built.
+2. **Grep for stale references when finishing a task.** Search CLAUDE.md, `.claude/commands/`
+   and `docs/` for the *exact* old text of anything renamed, moved or replaced, and for "once it exists"/"arrives in" notes about what you just built.
    Unknown task IDs are caught by `check-docs` automatically (since T-0004).
 3. **`ls` output may be swallowed in this shell** (aliased). Use `command ls -A` or the
    dedicated file tools.
@@ -47,6 +47,15 @@ unless it is written here. This file is how Claude gets better across sessions.
   `gh run watch` got an empty ID and failed. The WORKFLOW command I had just written had
   the same race. **Cause:** GitHub registers the run a few seconds after the push.
   **Rule:** 8 (WORKFLOW step 9 now polls by commit SHA).
+- **What happened:** `/code-review` found CLAUDE.md rule 7 still saying `gh run list -L 1`
+  after I changed WORKFLOW. My stale-reference grep looked for "no CI" wording, not the
+  old command itself. **Cause:** I grepped for the topic, not the exact text I replaced.
+  **Rule:** 2 (now says: grep for the exact old command/text in CLAUDE.md,
+  `.claude/commands/` and `docs/`).
+- **What happened:** the same review found `cancel-in-progress` cancelling `main` runs, and
+  that the fix for the race was a pasted shell loop, not a tool. **Cause:** I copied a
+  common PR-oriented workflow snippet without thinking about split commits on `main`.
+  **Fix:** T-0010 (`cargo xtask wait-ci`).
 - **Note:** first green run took 45 s with a cold cache. GitHub says `ubuntu-latest`
   moves to Ubuntu 26 from 2026-10-19; T-0007 should check package names there.
 

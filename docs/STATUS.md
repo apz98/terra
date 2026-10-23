@@ -8,7 +8,7 @@ _Update this file in every commit that changes progress. Keep it short._
 | **Milestone** | M0 — Foundations |
 | **Last completed** | T-0005 CI on GitHub Actions (no bump) |
 | **In progress** | — |
-| **Next up** | T-0006 Diagnostics foundation in `terra-core` |
+| **Next up** | T-0010 Fix `/code-review` findings on T-0009 and T-0005 |
 | **Blocked** | — |
 | **Remote / CI** | https://github.com/apz98/terra (public) · CI: GitHub Actions runs `cargo xtask ci` on push/PR to `main` |
 
@@ -26,7 +26,7 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | Review | Last run | Due? |
 |---|---|---|
-| `/code-review` | 2026-10-22 (T-0004, `2eea2bc`): 10 findings, all fixed in T-0009 | **Due**: T-0009 rewrote ~1,200 lines of xtask (>500-line trigger); also at the end of M0 |
+| `/code-review` | 2026-10-22 (T-0009 + T-0005, `b3d3dff..2b2725b`): 9 findings → T-0010 | Not due (next: end of M0, or after a >500-line task) |
 | `/security-review` | never | Not yet (first trigger: save files in M4, networking in M6) |
 
 ## Notes for the next session

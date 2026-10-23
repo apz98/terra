@@ -76,6 +76,32 @@ Review of `2eea2bc` (2026-10-22). Ahead of T-0005 because CI will run this code 
 - **AC:** green run on GitHub; README CI badge.
 - **Docs:** README, WORKFLOW (CI check step).
 
+### T-0010 Fix `/code-review` findings on T-0009 and T-0005 — `todo`
+Review of `b3d3dff..HEAD` (2026-10-22), 9 findings, all confirmed against the code. Ahead
+of T-0006 because two of them can make CI report red on a good commit.
+- **Crates:** `terra-xtask`; also `.github/workflows/ci.yml`, CLAUDE.md, WORKFLOW.
+1. **Don't cancel `main` runs:** `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`,
+   so every `main` commit gets a result and a watched run is never reported as `cancelled`.
+2. **CLAUDE.md rule 7** still says `gh run list -L 1` (the race LESSONS rule 8 bans).
+   Point it at the new command from item 3.
+3. **`cargo xtask wait-ci [<sha>]`** replaces the WORKFLOW shell loop (also review item 9):
+   filters by `--workflow ci.yml` and commit SHA (default `HEAD`), polls with a timeout,
+   exits non-zero on failure, timeout, or no run. Polling logic unit-tested with an injected `gh`.
+4. **Lockfile rollback:** `fs::read(Cargo.lock)` errors other than `NotFound` abort the
+   bump before writing; the lock is restored even if a manifest restore fails.
+5. **Backticked versions:** crate-table version cells and the STATUS game version accept
+   `` `0.1.1` `` (trim backticks like the name cell).
+6. **Indented fences:** fences inside nested list items (indent > 3) are treated as
+   fences, so their contents are ignored by every check.
+7. **Anchor the crate table:** take the table under ARCHITECTURE's `## 2.` heading (and STATUS's
+   `## Crate versions`), not the first table with `Crate` and `Version` columns.
+8. **check-docs without `toml_edit`:** read versions from `cargo metadata` only; keep
+   `Workspace::load` for `bump`.
+- **AC:** a unit test per xtask finding (3–8); first CI run on the new workflow green;
+  `cargo xtask ci` green.
+- **Docs:** WORKFLOW step 9, CLAUDE.md rule 7, `/next` (CI check), README (`wait-ci`),
+  VERSIONING if needed, CHANGELOG, STATUS.
+
 ### T-0006 Diagnostics foundation in `terra-core` — `todo`
 - `tracing` + `tracing-subscriber` init with `TERRA_LOG` env filter, pretty dev output.
 - Panic hook that writes a crash log (timestamp, version, backtrace) to the
