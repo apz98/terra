@@ -33,6 +33,7 @@ cargo test --workspace             # run all tests
 cargo xtask ci                     # every gate: fmt, clippy, tests, rustdoc, check-docs (CI runs the same)
 cargo xtask check-docs             # docs agree with the code (versions, tasks, changelog)
 cargo xtask bump terra-core minor --dry-run   # version bump with cascade (docs/VERSIONING.md)
+cargo xtask wait-ci                # after a push: wait for GitHub Actions on HEAD (needs `gh`)
 ```
 
 Dev builds optimize dependencies (`opt-level = 3`) and Terra's own code lightly

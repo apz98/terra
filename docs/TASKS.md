@@ -76,7 +76,7 @@ Review of `2eea2bc` (2026-10-22). Ahead of T-0005 because CI will run this code 
 - **AC:** green run on GitHub; README CI badge.
 - **Docs:** README, WORKFLOW (CI check step).
 
-### T-0010 Fix `/code-review` findings on T-0009 and T-0005 — `todo`
+### T-0010 Fix `/code-review` findings on T-0009 and T-0005 — `done (terra-xtask 0.2.0)`
 Review of `b3d3dff..HEAD` (2026-10-22), 9 findings, all confirmed against the code. Ahead
 of T-0006 because two of them can make CI report red on a good commit.
 - **Crates:** `terra-xtask`; also `.github/workflows/ci.yml`, CLAUDE.md, WORKFLOW.

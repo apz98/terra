@@ -9,12 +9,14 @@ You are resuming work on **Terra** after a context reset. Follow this exactly.
 - `docs/LESSONS.md`, the **Rules** section first. Apply them throughout this session.
 - `docs/STATUS.md`, `docs/TASKS.md`, `docs/OPEN_QUESTIONS.md`
 - `docs/WORKFLOW.md` (the task loop + definition of done) and `docs/VERSIONING.md`
-- `git status`, `git log --oneline -10`, and if a remote exists `gh run list -L 3`
+- `git status`, `git log --oneline -10`, and if a remote exists `cargo xtask wait-ci`
+  (the CI result for `HEAD`; if `HEAD` isn't pushed yet, it waits 2 min and fails, so
+  push it first or report why it's unpushed)
 
 ## 2. Sanity checks
 - Working tree dirty? Figure out whether it is unfinished work from the last session
   (check STATUS "In progress") and either finish it or report it. Never discard it silently.
-- Last CI run red? Fixing it is the next task, ahead of everything else.
+- CI red for `HEAD`? Fixing it is the next task, ahead of everything else.
 - STATUS.md disagreeing with git/Cargo versions? Fix the docs first (`docs:` commit).
 
 ## 3. Review reminders

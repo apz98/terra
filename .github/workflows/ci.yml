@@ -10,10 +10,12 @@ on:
 permissions:
   contents: read
 
-# A newer push to the same branch makes the older run pointless.
+# A newer push to a PR makes its older run pointless, so that one is cancelled. Runs on
+# `main` are never cancelled: every commit there gets a result, and a run someone is
+# waiting on (`cargo xtask wait-ci`) can't end as `cancelled` because of a later push.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always

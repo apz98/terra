@@ -16,13 +16,17 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use semver::Version;
 
-use crate::workspace::Workspace;
+use crate::workspace;
 
 const ARCHITECTURE: &str = "docs/ARCHITECTURE.md";
 const STATUS: &str = "docs/STATUS.md";
 const CHANGELOG: &str = "CHANGELOG.md";
 const TASKS: &str = "docs/TASKS.md";
 const ARCHIVE_DIR: &str = "docs/tasks/archive/";
+
+/// Each crate table is the first table with `Crate` and `Version` columns under this
+/// heading (a prefix of the heading line), so another table elsewhere can't stand in.
+const CRATE_TABLES: [(&str, &str); 2] = [(ARCHITECTURE, "## 2."), (STATUS, "## Crate versions")];
 
 /// The Markdown files that are checked, keyed by path relative to the workspace root.
 pub(crate) struct Docs(BTreeMap<String, String>);
@@ -81,9 +85,9 @@ pub(crate) fn check(crates: &BTreeMap<String, Version>, docs: &Docs) -> Vec<Stri
     let mut problems = Vec::new();
     let missing = |path: &str| format!("{path}: file is missing");
 
-    for path in [ARCHITECTURE, STATUS] {
+    for (path, heading) in CRATE_TABLES {
         match docs.get(path) {
-            Some(text) => problems.extend(check_crate_table(path, text, crates)),
+            Some(text) => problems.extend(check_crate_table(path, heading, text, crates)),
             None => problems.push(missing(path)),
         }
     }
@@ -116,9 +120,22 @@ struct CrateRow<'a> {
     version: &'a str,
 }
 
-/// The rows of the first Markdown table that has `Crate` and `Version` columns.
-fn crate_table(md: &str) -> Option<Vec<CrateRow<'_>>> {
+/// The rows of the first table with `Crate` and `Version` columns in the section under
+/// `heading`, which ends at the next heading of the same or a higher level.
+fn crate_table<'a>(md: &'a str, heading: &str) -> Result<Vec<CrateRow<'a>>, String> {
     let lines = prose_lines(md);
+    let level = heading_level(heading);
+    let start = lines
+        .iter()
+        .position(|(_, line)| line.starts_with(heading))
+        .ok_or_else(|| format!("no `{heading}` heading"))?
+        + 1;
+    let end = lines[start..]
+        .iter()
+        .position(|(_, line)| heading_level(line).is_some_and(|l| l <= level.unwrap_or(0)))
+        .map_or(lines.len(), |offset| start + offset);
+    let lines = &lines[start..end];
+
     let mut start = 0;
     while start < lines.len() {
         // A table is a run of table rows on consecutive source lines.
@@ -147,13 +164,23 @@ fn crate_table(md: &str) -> Option<Vec<CrateRow<'_>>> {
                 Some(CrateRow {
                     line,
                     name: cells.get(crate_col)?.trim_matches('`'),
-                    version: cells.get(version_col)?,
+                    version: cells.get(version_col)?.trim_matches('`'),
                 })
             })
             .collect();
-        return Some(rows);
+        return Ok(rows);
     }
-    None
+    Err(format!(
+        "no table with `Crate` and `Version` columns under `{heading}`"
+    ))
+}
+
+/// `Some(n)` if `line` is an ATX heading of level `n` (`## Title` → 2).
+fn heading_level(line: &str) -> Option<usize> {
+    let level = line.bytes().take_while(|&b| b == b'#').count();
+    let rest = &line[level..];
+    ((1..=6).contains(&level) && (rest.is_empty() || rest.starts_with([' ', '\t'])))
+        .then_some(level)
 }
 
 fn is_table_row(line: &str) -> bool {
@@ -173,11 +200,15 @@ fn cells(line: &str) -> Vec<&str> {
     line.split('|').map(str::trim).collect()
 }
 
-fn check_crate_table(path: &str, md: &str, crates: &BTreeMap<String, Version>) -> Vec<String> {
-    let Some(rows) = crate_table(md) else {
-        return vec![format!(
-            "{path}: no table with `Crate` and `Version` columns"
-        )];
+fn check_crate_table(
+    path: &str,
+    heading: &str,
+    md: &str,
+    crates: &BTreeMap<String, Version>,
+) -> Vec<String> {
+    let rows = match crate_table(md, heading) {
+        Ok(rows) => rows,
+        Err(problem) => return vec![format!("{path}: {problem}")],
     };
     let mut problems = Vec::new();
     for (name, version) in crates {
@@ -223,7 +254,7 @@ fn check_status_game_version(md: &str, terra: &Version) -> Option<String> {
     let stated = cells(text)
         .get(1)
         .and_then(|cell| cell.split_whitespace().next())
-        .unwrap_or("");
+        .map_or("", |version| version.trim_matches('`'));
     (stated != terra.to_string()).then(|| {
         format!("{STATUS}:{line}: game version is {stated} but the `terra` crate is {terra}")
     })
@@ -310,8 +341,10 @@ fn defined_task_ids(md: &str) -> Vec<&str> {
 /// `(line number, text)` of every line outside fenced code blocks. Examples and
 /// templates live in code blocks and may name tasks that don't exist.
 ///
-/// Follows `CommonMark`: a fence is 3+ backticks or tildes indented at most 3 spaces, and
-/// only a fence of the same character, at least as long, with nothing after it closes it.
+/// Follows `CommonMark`: a fence is 3+ backticks or tildes, and only a fence of the same
+/// character, at least as long, with nothing after it closes it. Any indentation is
+/// accepted, because fences inside nested list items are indented by 4+ spaces. (At the
+/// top level that would be an indented code block, which is code either way.)
 fn prose_lines(md: &str) -> Vec<(usize, &str)> {
     let mut open: Option<(u8, usize)> = None;
     let mut prose = Vec::new();
@@ -328,10 +361,7 @@ fn prose_lines(md: &str) -> Vec<(usize, &str)> {
 
 /// `(fence character, length, nothing follows it)` if `line` is a code fence.
 fn fence(line: &str) -> Option<(u8, usize, bool)> {
-    let rest = line.trim_start_matches(' ');
-    if line.len() - rest.len() > 3 {
-        return None;
-    }
+    let rest = line.trim_start_matches([' ', '\t']);
     let ch = *rest
         .as_bytes()
         .first()
@@ -347,7 +377,7 @@ fn fence(line: &str) -> Option<(u8, usize, bool)> {
 
 /// Runs `cargo xtask check-docs`.
 pub(crate) fn run(root: &Path) -> Result<()> {
-    let crates = Workspace::load(root)?.versions();
+    let crates = workspace::versions(root)?;
     let docs = Docs::load(root)?;
     let problems = check(&crates, &docs);
     if problems.is_empty() {
@@ -371,6 +401,8 @@ mod tests {
     const ARCH: &str = "\
 # Architecture
 
+## 2. Crates
+
 | Crate | Kind | Version | Status |
 |---|---|---|---|
 | `terra` | bin | 0.1.0 | ok |
@@ -383,6 +415,8 @@ mod tests {
 |---|---|
 | **Game version** (`terra`) | 0.1.0 (first feature) |
 | **Milestone** | M0 |
+
+## Crate versions
 
 | Crate | Version |
 |---|---|
@@ -446,13 +480,13 @@ mod tests {
         assert_eq!(
             problems(&[(ARCHITECTURE, &arch)]),
             [
-                "docs/ARCHITECTURE.md:6: `terra-core` is listed as 0.1.9 but its Cargo.toml says 0.2.0"
+                "docs/ARCHITECTURE.md:8: `terra-core` is listed as 0.1.9 but its Cargo.toml says 0.2.0"
             ]
         );
         let status = STATUS_MD.replace("| `terra-core` | 0.2.0 |", "| `terra-core` | 0.1.0 |");
         assert_eq!(
             problems(&[(STATUS, &status)]),
-            ["docs/STATUS.md:9: `terra-core` is listed as 0.1.0 but its Cargo.toml says 0.2.0"]
+            ["docs/STATUS.md:11: `terra-core` is listed as 0.1.0 but its Cargo.toml says 0.2.0"]
         );
     }
 
@@ -462,7 +496,7 @@ mod tests {
         assert_eq!(
             problems(&[(ARCHITECTURE, &arch)]),
             [
-                "docs/ARCHITECTURE.md:7: `terra-render` has version 0.1.0 but is not a workspace \
+                "docs/ARCHITECTURE.md:9: `terra-render` has version 0.1.0 but is not a workspace \
               crate (use — for planned crates)"
             ]
         );
@@ -472,7 +506,54 @@ mod tests {
     fn missing_crate_table() {
         assert_eq!(
             problems(&[(ARCHITECTURE, "# Architecture\n")]),
-            ["docs/ARCHITECTURE.md: no table with `Crate` and `Version` columns"]
+            ["docs/ARCHITECTURE.md: no `## 2.` heading"]
+        );
+        assert_eq!(
+            problems(&[(ARCHITECTURE, "## 2. Crates\n\nNone yet.\n")]),
+            ["docs/ARCHITECTURE.md: no table with `Crate` and `Version` columns under `## 2.`"]
+        );
+    }
+
+    #[test]
+    fn crate_table_is_the_one_under_its_heading() {
+        let other = "| Crate | Version |\n|---|---|\n| `terra` | 9.9.9 |\n";
+        // Tables before the section, and in a later section, are not the crate table ...
+        let arch = format!("# A\n\n## 1. Intro\n\n{other}\n{ARCH}\n## 3. More\n\n{other}");
+        assert_eq!(problems(&[(ARCHITECTURE, &arch)]), Vec::<String>::new());
+        // ... but a subsection belongs to the section.
+        let arch = format!("# A\n\n## 2. Crates\n\n### 2.1 List\n\n{other}");
+        assert_eq!(
+            problems(&[(ARCHITECTURE, &arch)]),
+            [
+                "docs/ARCHITECTURE.md:9: `terra` is listed as 9.9.9 but its Cargo.toml says 0.1.0",
+                "docs/ARCHITECTURE.md: crate `terra-core` is missing from the crate table",
+            ]
+        );
+        // `## 20.` is a different section from `## 2.`.
+        let arch = ARCH.replace("## 2. Crates", "## 20. Crates");
+        assert_eq!(
+            problems(&[(ARCHITECTURE, &arch)]),
+            ["docs/ARCHITECTURE.md: no `## 2.` heading"]
+        );
+    }
+
+    #[test]
+    fn backticked_versions_are_accepted() {
+        let arch = ARCH.replace("| lib | 0.2.0 |", "| lib | `0.2.0` |");
+        let status = STATUS_MD
+            .replace("| 0.1.0 (first feature) |", "| `0.1.0` (first feature) |")
+            .replace("| `terra` | 0.1.0 |", "| `terra` | `0.1.0` |");
+        assert_eq!(
+            problems(&[(ARCHITECTURE, &arch), (STATUS, &status)]),
+            Vec::<String>::new()
+        );
+        // The backticks don't hide a wrong version.
+        let arch = ARCH.replace("| lib | 0.2.0 |", "| lib | `0.1.0` |");
+        assert_eq!(
+            problems(&[(ARCHITECTURE, &arch)]),
+            [
+                "docs/ARCHITECTURE.md:8: `terra-core` is listed as 0.1.0 but its Cargo.toml says 0.2.0"
+            ]
         );
     }
 
@@ -556,6 +637,25 @@ T-0905 is prose
         assert_eq!(
             problems(&[("docs/NOTES.md", notes)]),
             ["docs/NOTES.md:15: T-0905 is not a task in docs/TASKS.md or docs/tasks/archive/"]
+        );
+    }
+
+    #[test]
+    fn fences_in_nested_list_items_are_fences() {
+        let notes = "\
+- Steps:
+    1. Run this:
+        ```sh
+        echo T-0901
+        ```
+    2. Then T-0902.
+\t```
+\tT-0903 in a tab-indented fence
+\t```
+";
+        assert_eq!(
+            problems(&[("docs/NOTES.md", notes)]),
+            ["docs/NOTES.md:6: T-0902 is not a task in docs/TASKS.md or docs/tasks/archive/"]
         );
     }
 

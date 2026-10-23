@@ -36,7 +36,7 @@ Crates are created by the task that first needs them, not before. All crates liv
 |---|---|---|---|---|
 | `terra` | bin | 0.0.0 | scaffold (prints version) | Game binary. Wires client + integrated server. **Its version is the game version.** |
 | `terra-core` | lib | 0.0.0 | scaffold (empty) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
-| `terra-xtask` | bin (internal) | 0.1.1 | `bump`, `check-docs`, `ci` | Automation: version bumps with cascade, doc-drift checks, all quality gates; later asset tooling |
+| `terra-xtask` | bin (internal) | 0.2.0 | `bump`, `check-docs`, `ci`, `wait-ci` | Automation: version bumps with cascade, doc-drift checks, all quality gates, waiting on GitHub CI; later asset tooling |
 | `terra-render` | lib | — | planned (M1) | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
 | `terra-client` | lib | — | planned (M1) | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
 | `terra-world` | lib | — | planned (M2) | Block states, chunk columns/sections (palette storage), light, world access API |

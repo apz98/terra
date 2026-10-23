@@ -3,10 +3,12 @@
 //! - `bump`: version bumps with the cascade from `docs/VERSIONING.md`.
 //! - `check-docs`: fails when the docs disagree with the code.
 //! - `ci`: every quality gate in one command (`docs/WORKFLOW.md`).
+//! - `wait-ci`: waits for GitHub Actions to finish a pushed commit and reports the result.
 
 mod bump;
 mod check_docs;
 mod ci;
+mod wait_ci;
 mod workspace;
 
 use std::env;
@@ -30,7 +32,10 @@ commands:
       Fail if the docs disagree with the code: crate tables, CHANGELOG heading,
       STATUS game version, one task in progress, unknown task IDs.
   ci
-      Run every gate: fmt, clippy -D warnings, tests, rustdoc -D warnings, check-docs.";
+      Run every gate: check-docs, fmt, clippy -D warnings, tests, rustdoc -D warnings.
+  wait-ci [<commit>]
+      Wait for the GitHub Actions `ci.yml` run of a pushed commit (default HEAD) and
+      fail unless it passes. Needs the `gh` CLI, logged in.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -50,6 +55,7 @@ fn main() -> ExitCode {
         "ci" => no_args(rest)
             .and_then(|()| workspace_root())
             .and_then(|root| ci::run(&root)),
+        "wait-ci" => workspace_root().and_then(|root| wait_ci::run(&root, rest)),
         other => {
             eprintln!("unknown command `{other}`\n\n{USAGE}");
             return ExitCode::FAILURE;

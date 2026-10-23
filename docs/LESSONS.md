@@ -38,9 +38,22 @@ unless it is written here. This file is how Claude gets better across sessions.
 7. **Tools enforce documented invariants.** If a doc says "never X" or "X is a manual
    decision" and a tool can do X, the tool refuses without an explicit flag.
 8. **Wait on CI by commit SHA, not "latest run".** A run appears a few seconds after the
-   push; use the loop in WORKFLOW step 9 (`gh run list --commit <sha>`).
+   push; `cargo xtask wait-ci` handles it (WORKFLOW step 9).
+9. **Scripted edits stay dumb and checked.** Use the Edit tool for one-off replacements.
+   In a Python/sed edit script, no clever expressions (conditionals, joins) inside
+   `replace` arguments, and check the file's line count or `git diff --stat` afterwards.
 
 ## Log (newest first)
+
+### 2026-10-22 — T-0010 Fix `/code-review` findings on T-0009 and T-0005
+- **What happened:** a Python edit script turned `wait_ci.rs` into two nested copies of
+  itself. I had written `s.replace(a, X + Y if False else s.replace(a, Z))`. `if/else`
+  binds looser than `+`, so the replacement text was the whole edited file. Rustc caught
+  it (`//!` in the middle of a file) and I recovered the inner copy. **Cause:** a
+  half-rewritten one-liner left in the script. **Rule:** 9.
+- **Note:** clippy (1.99) wants `Duration::from_mins(45)` over `from_secs(45 * 60)`, and
+  flags test helpers that always return `Ok` (`unnecessary_wraps`). Use `#[expect(…,
+  reason = …)]` when the `Result` is the point.
 
 ### 2026-10-22 — T-0005 CI on GitHub Actions
 - **What happened:** right after `git push`, `gh run list -L 1` returned no run, so

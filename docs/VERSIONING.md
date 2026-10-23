@@ -62,8 +62,10 @@ Internal tool crates (`terra-xtask`) follow the same rules but never cascade.
     survive), runs `cargo update --workspace` so `Cargo.lock` matches, and prints the
     `Bumps:` line for the commit message. If any step fails, the manifests and
     `Cargo.lock` are restored, so it's safe to re-run. `--dry-run` only prints.
-- `cargo xtask check-docs` fails if a crate table (ARCHITECTURE, STATUS), the CHANGELOG
-  heading, or the STATUS game version disagrees with the `Cargo.toml` versions.
+- `cargo xtask check-docs` fails if a crate table (the first table under ARCHITECTURE's
+  `## 2.` heading and under STATUS's `## Crate versions`), the CHANGELOG heading, or the
+  STATUS game version disagrees with the versions `cargo metadata` reports. Versions may
+  be written plain or in backticks.
 - **Tags:** only the game version is tagged: `v<terra version>` on the commit that
   set it. The tag is annotated with the crate bump list.
 - **1.0.0** is a manual decision at the end of the Friends Release milestone (M11).

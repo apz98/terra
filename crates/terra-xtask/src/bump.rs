@@ -3,6 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fs;
+use std::io;
 use std::path::Path;
 use std::process::Command;
 use std::str::FromStr;
@@ -168,29 +169,48 @@ pub(crate) fn apply(workspace: &mut Workspace, bumps: &[Bump]) -> Result<()> {
 
 /// Writes the edited manifests and refreshes `Cargo.lock` with `refresh_lock`. If any of
 /// it fails, the manifests and `Cargo.lock` are put back so a retry can't bump twice.
+/// A `Cargo.lock` that exists but can't be read stops the bump before anything is written.
 fn commit(
     root: &Path,
     workspace: &Workspace,
     refresh_lock: impl FnOnce(&Path) -> Result<()>,
 ) -> Result<()> {
     let lock_path = root.join("Cargo.lock");
-    let lock = fs::read(&lock_path).ok();
+    let lock = match fs::read(&lock_path) {
+        Ok(bytes) => Some(bytes),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+        Err(error) => {
+            return Err(error).with_context(|| {
+                format!(
+                    "reading {} (needed to roll back a failed bump); nothing changed",
+                    lock_path.display()
+                )
+            });
+        }
+    };
     let Err(error) = workspace.save().and_then(|()| refresh_lock(root)) else {
         return Ok(());
     };
-    let rollback = workspace.restore().and_then(|()| {
-        match &lock {
-            Some(bytes) => fs::write(&lock_path, bytes)?,
-            None if lock_path.exists() => fs::remove_file(&lock_path)?,
-            None => {}
-        }
-        Ok(())
-    });
-    Err(match rollback {
-        Ok(()) => error.context("bump failed and was rolled back; nothing changed"),
-        Err(rollback) => error.context(format!(
-            "bump failed and the rollback failed too ({rollback:#}); check `git diff`"
-        )),
+    // Restore the lock even if a manifest can't be restored, and report both.
+    let manifests = workspace.restore();
+    let lock = match &lock {
+        Some(bytes) => fs::write(&lock_path, bytes),
+        None if lock_path.exists() => fs::remove_file(&lock_path),
+        None => Ok(()),
+    }
+    .with_context(|| format!("restoring {}", lock_path.display()));
+    let failures: Vec<String> = [manifests, lock]
+        .into_iter()
+        .filter_map(Result::err)
+        .map(|failure| format!("{failure:#}"))
+        .collect();
+    Err(if failures.is_empty() {
+        error.context("bump failed and was rolled back; nothing changed")
+    } else {
+        error.context(format!(
+            "bump failed and the rollback failed too ({}); check `git diff`",
+            failures.join("; ")
+        ))
     })
 }
 
@@ -540,6 +560,54 @@ mod tests {
             plan_summary(&fixture, &[req("lib", Level::Minor)]),
             "Bumps: lib 0.1.0 → 0.2.0, app 0.1.0 → 0.2.0"
         );
+    }
+
+    #[test]
+    fn unreadable_lock_stops_the_bump_before_writing() {
+        let fixture = Fixture::new(
+            "",
+            &[("lib", "0.1.0", ""), ("app", "0.1.0", &deps(&["lib"]))],
+        );
+        // A directory can't be read as a file, and the error isn't `NotFound`.
+        fs::create_dir(fixture.root().join("Cargo.lock")).unwrap();
+        let before = read(&fixture.manifest("lib"));
+
+        let mut ws = load(&fixture);
+        let bumps = plan(&ws, &[req("lib", Level::Minor)], false).unwrap();
+        apply(&mut ws, &bumps).unwrap();
+        let err = commit(fixture.root(), &ws, |_| panic!("must not refresh")).unwrap_err();
+
+        assert!(format!("{err:#}").contains("nothing changed"), "{err:#}");
+        assert_eq!(read(&fixture.manifest("lib")), before);
+    }
+
+    #[test]
+    fn lock_is_restored_even_if_a_manifest_restore_fails() {
+        let fixture = Fixture::new(
+            "",
+            &[("lib", "0.1.0", ""), ("app", "0.1.0", &deps(&["lib"]))],
+        );
+        let lock_path = fixture.root().join("Cargo.lock");
+        fs::write(&lock_path, "# original lock\n").unwrap();
+        let lib_before = read(&fixture.manifest("lib"));
+
+        let mut ws = load(&fixture);
+        let bumps = plan(&ws, &[req("lib", Level::Minor)], false).unwrap();
+        apply(&mut ws, &bumps).unwrap();
+        let err = commit(fixture.root(), &ws, |root| {
+            fs::write(root.join("Cargo.lock"), "# half-written\n")?;
+            // `app`'s manifest can't be written back once its directory is gone.
+            fs::remove_dir_all(root.join("crates/app"))?;
+            bail!("network is down")
+        })
+        .unwrap_err();
+
+        let message = format!("{err:#}");
+        assert!(message.contains("rollback failed too"), "{message}");
+        assert!(message.contains("crates/app/Cargo.toml"), "{message}");
+        // Every other file is still put back.
+        assert_eq!(read(&lock_path), "# original lock\n");
+        assert_eq!(read(&fixture.manifest("lib")), lib_before);
     }
 
     #[test]

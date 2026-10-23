@@ -7,7 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail, ensure};
-use cargo_metadata::{DependencyKind, MetadataCommand};
+use cargo_metadata::{DependencyKind, Metadata, MetadataCommand};
 use semver::{Op, Version, VersionReq};
 use toml_edit::{DocumentMut, Item, TableLike, Value};
 
@@ -71,16 +71,31 @@ pub(crate) struct Workspace {
     manifests: BTreeMap<PathBuf, Manifest>,
 }
 
+/// The workspace at `root` as Cargo sees it, without resolving third-party dependencies
+/// (so `exclude`, globs and inherited fields behave exactly as in a build).
+fn metadata(root: &Path) -> Result<Metadata> {
+    MetadataCommand::new()
+        .cargo_path(crate::cargo())
+        .manifest_path(root.join("Cargo.toml"))
+        .no_deps()
+        .exec()
+        .context("running `cargo metadata`")
+}
+
+/// `(name, version)` of every member, straight from `cargo metadata`. For read-only
+/// checks: no manifest is read or parsed here.
+pub(crate) fn versions(root: &Path) -> Result<BTreeMap<String, Version>> {
+    Ok(metadata(root)?
+        .workspace_packages()
+        .into_iter()
+        .map(|p| (p.name.as_ref().to_owned(), p.version.clone()))
+        .collect())
+}
+
 impl Workspace {
-    /// Asks Cargo for the members of the workspace at `root` (so `exclude`, globs and
-    /// inherited fields behave exactly as in a build) and reads their manifests.
+    /// Asks Cargo for the members of the workspace at `root` and reads their manifests.
     pub(crate) fn load(root: &Path) -> Result<Self> {
-        let metadata = MetadataCommand::new()
-            .cargo_path(crate::cargo())
-            .manifest_path(root.join("Cargo.toml"))
-            .no_deps()
-            .exec()
-            .context("running `cargo metadata`")?;
+        let metadata = metadata(root)?;
         let members = metadata.workspace_packages();
         let names: BTreeSet<&str> = members.iter().map(|p| p.name.as_ref()).collect();
 
@@ -127,14 +142,6 @@ impl Workspace {
 
     pub(crate) fn names(&self) -> Vec<&str> {
         self.packages.iter().map(|p| p.name.as_str()).collect()
-    }
-
-    /// `(name, version)` of every member.
-    pub(crate) fn versions(&self) -> BTreeMap<String, Version> {
-        self.packages
-            .iter()
-            .map(|p| (p.name.clone(), p.version.clone()))
-            .collect()
     }
 
     /// For each member, the members that ship it.
@@ -241,14 +248,19 @@ impl Workspace {
         Ok(())
     }
 
-    /// Writes back the text originally read for every changed manifest.
+    /// Writes back the text originally read for every changed manifest. One failure
+    /// doesn't stop the others from being restored; all of them are reported.
     pub(crate) fn restore(&self) -> Result<()> {
-        for (path, manifest) in &self.manifests {
-            if manifest.is_changed() {
-                fs::write(path, &manifest.original)
-                    .with_context(|| format!("restoring {}", path.display()))?;
-            }
-        }
+        let failures: Vec<String> = self
+            .manifests
+            .iter()
+            .filter(|(_, manifest)| manifest.is_changed())
+            .filter_map(|(path, manifest)| {
+                let error = fs::write(path, &manifest.original).err()?;
+                Some(format!("restoring {}: {error}", path.display()))
+            })
+            .collect();
+        ensure!(failures.is_empty(), "{}", failures.join("; "));
         Ok(())
     }
 
@@ -463,6 +475,24 @@ mod tests {
         );
         let ws = Workspace::load(fixture.root()).unwrap();
         assert_eq!(ws.names(), ["a"]);
+    }
+
+    #[test]
+    fn versions_come_from_cargo_metadata_alone() {
+        let fixture = Fixture::new(
+            "\n[workspace.package]\nversion = \"0.7.0\"\n",
+            &[("a", "0.1.0", ""), ("b", "0.0.0", "")],
+        );
+        // Inherited versions are resolved by Cargo, not read from the manifest text.
+        let manifest = fixture.manifest("b");
+        let text = read(&manifest).replace("version = \"0.0.0\"", "version.workspace = true");
+        fs::write(&manifest, text).unwrap();
+        let versions = versions(fixture.root()).unwrap();
+        let versions: Vec<String> = versions
+            .iter()
+            .map(|(name, version)| format!("{name} {version}"))
+            .collect();
+        assert_eq!(versions, ["a 0.1.0", "b 0.7.0"]);
     }
 
     #[test]

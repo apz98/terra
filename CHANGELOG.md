@@ -4,11 +4,26 @@ All notable changes. Format and bump rules: [`docs/VERSIONING.md`](docs/VERSIONI
 Headings are game versions (`terra` crate) unless noted.
 
 ## [Unreleased]
+- ci: runs on `main` are never cancelled by a newer push, only PR runs are (T-0010)
 - ci: GitHub Actions workflow runs `cargo xtask ci` on push and PR to `main`; README badge (T-0005)
 - docs: `docs/LESSONS.md` lessons log, wired into CLAUDE.md, `/next` and the WORKFLOW retro step
 - chore(workspace): Cargo workspace scaffold with `terra`, `terra-core`, `terra-xtask` at 0.0.0,
   pinned toolchain 1.99.1, shared lints and build profiles (T-0003)
 - docs: repository published at https://github.com/apz98/terra (T-0002)
+
+## terra-xtask 0.2.0 — 2026-10-22
+Bumps: terra-xtask 0.1.1 → 0.2.0
+### Added
+- `wait-ci [<commit>]`: waits for the `ci.yml` run of a pushed commit (default `HEAD`)
+  and fails on failure, cancellation, timeout, or no run. Replaces the shell loop in
+  WORKFLOW step 9, CLAUDE.md rule 7 and the `/next` CI check (T-0010)
+### Fixed
+Fixes for the `/code-review` findings on T-0009 and T-0005 (T-0010):
+- `bump` stops before writing anything if `Cargo.lock` exists but can't be read, and a
+  failed rollback still restores every other manifest and `Cargo.lock`
+- `check-docs` takes each crate table from its own section (ARCHITECTURE `## 2.`,
+  STATUS `## Crate versions`), accepts backticked versions, treats indented fences
+  (nested list items) as fences, and reads versions from `cargo metadata` alone
 
 ## terra-xtask 0.1.1 — 2026-10-22
 Bumps: terra-xtask 0.1.0 → 0.1.1

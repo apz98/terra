@@ -38,7 +38,7 @@ and never let docs drift from code.
    --workspace --all-targets -- -D warnings`, `cargo test --workspace`, and
    `cargo xtask check-docs`, all in one command: `cargo xtask ci`. Never commit red.
 7. **Commit + push.** Conventional Commit messages; one task ≈ one commit (split if
-   large). Push to `origin main` and check CI (`gh run list -L 1`). Fix red CI first.
+   large). Push to `origin main` and wait for CI with `cargo xtask wait-ci`. Fix red CI first.
 8. **Learn across `/clear`.** Context is wiped often. Whenever something goes wrong or
    surprises us (red gate/CI, wrong assumption, tool quirk, doc drift, a correction from
    Adrian), log it in `docs/LESSONS.md` in the same commit and promote it to a rule, or

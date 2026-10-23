@@ -36,7 +36,7 @@ Friends Release unless Adrian reprioritizes (see `OPEN_QUESTIONS.md` Q1).
 - Documentation set, ADRs, `/next` command *(done in v0.0.0)*
 - GitHub repo `apz98/terra` (public), CI (fmt, clippy, test, docs, check-docs)
 - Cargo workspace, pinned toolchain, lints, build profiles
-- `terra-xtask`: `bump`, `check-docs`, `ci`
+- `terra-xtask`: `bump`, `check-docs`, `ci`, `wait-ci`
 - `terra-core`: tracing/logging, crash log, profiling hooks
 - Linux system dependencies documented
 
