@@ -53,4 +53,5 @@ Record numbers when a milestone completes or a hot path changes.
 
 | Date | Game version | Benchmark / scenario | Result | Notes |
 |---|---|---|---|---|
-| — | — | — | — | No code yet |
+| 2026-10-22 | 0.1.0 | M0 snapshot: `terra` release binary (prints version) | 1.48 MiB; runs in ~1.5 ms; max RSS 11.5 MiB | No game code yet; baseline for binary size and startup |
+| 2026-10-22 | 0.1.0 | M0 snapshot: `cargo xtask ci`, warm, no changes | 0.4 s local; 42 s on GitHub Actions | CI includes apt packages and the Rust cache restore |

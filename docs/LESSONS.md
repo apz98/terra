@@ -27,8 +27,10 @@ unless it is written here. This file is how Claude gets better across sessions.
 2. **Grep for stale references when finishing a task.** Search CLAUDE.md, `.claude/commands/`
    and `docs/` for the *exact* old text of anything renamed, moved or replaced, and for "once it exists"/"arrives in" notes about what you just built.
    Unknown task IDs are caught by `check-docs` automatically (since T-0004).
-3. **`ls` output may be swallowed in this shell** (aliased). Use `command ls -A` or the
-   dedicated file tools.
+3. **The shell is zsh with aliases.** `ls` output may be swallowed: use `command ls -A`
+   or the file tools. A word starting with `=` is a command lookup (`echo ====` fails),
+   unmatched globs are errors (quote `--include='*.md'`), and `/usr/bin/time` and `bc`
+   aren't installed: time with `date +%s%N` arithmetic.
 4. **Verify, don't assume.** Look up crate versions on crates.io (`curl -A terra-dev`, no
    personal data in headers) and toolchain versions with `rustup check` at task time;
    confirm a command's output before reporting it.
@@ -45,6 +47,15 @@ unless it is written here. This file is how Claude gets better across sessions.
    `replace` arguments, and check the file's line count or `git diff --stat` afterwards.
 
 ## Log (newest first)
+
+### 2026-10-22 — T-0008 M0 wrap-up
+- **What happened:** three shell commands failed on zsh quirks: `echo =====` (zsh expands
+  `=word` to a command path), an unquoted `--include=*.md` (unmatched glob is an error),
+  and timing with `/usr/bin/time` and `bc` (neither is installed). **Cause:** wrote bash
+  habits for a zsh shell. **Rule:** 3 (widened from the `ls` alias to zsh quirks).
+- **What happened:** two new task descriptions told future tasks to edit ADR 0010, which
+  `docs/adr/README.md` says is never rewritten once accepted. Caught by the stale-reference
+  grep before committing. **Rule:** none new; an ADR changes only through a superseding ADR.
 
 ### 2026-10-22 — T-0007 Linux build prerequisites
 - **What happened:** checking 16 package names on packages.ubuntu.com took more than 3

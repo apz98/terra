@@ -54,3 +54,16 @@ every time we run the clear command you get better and don't make the same mista
 `docs/LESSONS.md` (log + short Rules list, promoted to automated checks where possible),
 read at the start of every session (CLAUDE.md, `/next`) and updated by a new **Retro**
 step in the WORKFLOW task loop.
+
+## 2026-10-22 — M0 wrap-up (T-0008)
+
+| Question | Claude's recommendation | Adrian's answer |
+|---|---|---|
+| Q2: Where does the 16×16 art come from? | Procedural placeholders now, a CC0 pack or hand-drawn art before M11 (75%) | "Procedural now and convert that to real art assets" |
+| Q1: Do your friends mostly play on Windows? | Move Windows before M11 if so (85%) | Mixed / not sure yet |
+
+**Outcome.** Q2: the texture generator is a tool (`cargo xtask gen-textures`) whose output
+is committed as PNG files under `assets/`. The game loads those files, and they're the art
+from then on, so they can be edited or replaced one by one without touching code. The
+generator won't overwrite them without `--force` (T-0104). Q1 stays open (OPEN_QUESTIONS),
+to ask again before M6.

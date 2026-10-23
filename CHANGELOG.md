@@ -7,6 +7,8 @@ Headings are game versions (`terra` crate) unless noted.
 - ci: installs the Ubuntu system packages from `.github/ubuntu-packages.txt` and checks
   Vulkan with `vulkaninfo`; runner pinned to `ubuntu-24.04` (T-0007)
 - docs: README "Building on Linux" lists the Arch and Ubuntu packages (T-0007)
+- docs: M0 complete; its tasks are archived in `docs/tasks/archive/M0.md`, M1 is expanded
+  into tasks (T-0108, T-0101–T-0107), and the M0 perf snapshot is recorded (T-0008)
 
 ## terra 0.1.0 — 2026-10-22
 Bumps: terra-core 0.0.0 → 0.1.0, terra 0.0.0 → 0.1.0
