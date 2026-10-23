@@ -102,7 +102,7 @@ of T-0006 because two of them can make CI report red on a good commit.
 - **Docs:** WORKFLOW step 9, CLAUDE.md rule 7, `/next` (CI check), README (`wait-ci`),
   VERSIONING if needed, CHANGELOG, STATUS.
 
-### T-0006 Diagnostics foundation in `terra-core` — `todo`
+### T-0006 Diagnostics foundation in `terra-core` — `done (terra 0.1.0)`
 - `tracing` + `tracing-subscriber` init with `TERRA_LOG` env filter, pretty dev output.
 - Panic hook that writes a crash log (timestamp, version, backtrace) to the
   platform data dir (`directories` crate) and logs its path.

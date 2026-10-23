@@ -34,8 +34,8 @@ Crates are created by the task that first needs them, not before. All crates liv
 
 | Crate | Kind | Version | Status | Responsibility |
 |---|---|---|---|---|
-| `terra` | bin | 0.0.0 | scaffold (prints version) | Game binary. Wires client + integrated server. **Its version is the game version.** |
-| `terra-core` | lib | 0.0.0 | scaffold (empty) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
+| `terra` | bin | 0.1.0 | prints version; logging, crash reports, `profile-tracy` feature | Game binary. Wires client + integrated server. **Its version is the game version.** |
+| `terra-core` | lib | 0.1.0 | `diagnostics` (logging, crash reports) | Shared foundation: coordinates, ids, math re-exports (glam), logging/tracing init, config, errors |
 | `terra-xtask` | bin (internal) | 0.2.0 | `bump`, `check-docs`, `ci`, `wait-ci` | Automation: version bumps with cascade, doc-drift checks, all quality gates, waiting on GitHub CI; later asset tooling |
 | `terra-render` | lib | — | planned (M1) | wgpu renderer: device/surface, texture arrays, chunk meshes, shaders (WGSL), sky, LOD |
 | `terra-client` | lib | — | planned (M1) | winit app, input, camera, UI/HUD, client world mirror, prediction/interpolation |
@@ -112,8 +112,20 @@ data for meshing). There's no shared mutable world between client and server.
 
 ## 8. Diagnostics
 
-- `tracing` everywhere; `TERRA_LOG` env filter. Crash logs written to the data dir.
-- `profiling` crate scopes in hot paths; `--features profile-tracy` for Tracy.
+- `tracing` everywhere. Binaries call `terra_core::diagnostics::init_logging()` first: one
+  global subscriber on stderr, filter from `TERRA_LOG` (`EnvFilter` syntax, default `info`;
+  an invalid value falls back to `info` with a warning), `pretty` format in debug builds,
+  compact in release, colours only on a terminal. `log` events (wgpu, winit) are forwarded.
+  Libraries never install subscribers or hooks.
+- Crash reports: `install_crash_handler(version, dir)` sets a panic hook that writes
+  `crash-<UTC time>.log` (time, game version, OS, thread, message, location, full
+  backtrace) into `<data dir>/crash-reports/`, logs the path, then runs the default hook.
+  It also runs before the abort in release builds (`panic = "abort"`). Data dir:
+  `directories::ProjectDirs` for "Terra" (`~/.local/share/terra` on Linux,
+  `%APPDATA%\Terra\data` on Windows); saves and identity will live there too.
+- `profiling` crate scopes in hot paths (`profiling::scope!`, `#[profiling::function]`);
+  they compile to nothing by default. `cargo run -p terra --features profile-tracy`
+  streams them to [Tracy](https://github.com/wolfpld/tracy); `main` starts the Tracy client.
 - F3-style debug overlay on the client (M1+).
 
 ## 9. Glossary

@@ -4,6 +4,17 @@ All notable changes. Format and bump rules: [`docs/VERSIONING.md`](docs/VERSIONI
 Headings are game versions (`terra` crate) unless noted.
 
 ## [Unreleased]
+
+## terra 0.1.0 — 2026-10-22
+Bumps: terra-core 0.0.0 → 0.1.0, terra 0.0.0 → 0.1.0
+### Added
+- `terra_core::diagnostics`: `init_logging()` installs the `tracing` subscriber (stderr,
+  `TERRA_LOG` filter, default `info`; idempotent), and `install_crash_handler()` writes a
+  crash report (time, version, OS, thread, message, location, backtrace) to
+  `<data dir>/crash-reports/` on panic and logs its path (T-0006)
+- `terra` initialises logging and crash reports at startup, and has a `profile-tracy`
+  feature that streams `profiling` scopes to Tracy (T-0006)
+### Other
 - ci: runs on `main` are never cancelled by a newer push, only PR runs are (T-0010)
 - ci: GitHub Actions workflow runs `cargo xtask ci` on push and PR to `main`; README badge (T-0005)
 - docs: `docs/LESSONS.md` lessons log, wired into CLAUDE.md, `/next` and the WORKFLOW retro step

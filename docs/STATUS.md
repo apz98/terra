@@ -4,11 +4,11 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | | |
 |---|---|
-| **Game version** (`terra`) | 0.0.0 (docs baseline, tag `v0.0.0`) |
+| **Game version** (`terra`) | 0.1.0 (tag `v0.1.0`) |
 | **Milestone** | M0 — Foundations |
-| **Last completed** | T-0010 Fix `/code-review` findings on T-0009 and T-0005 (terra-xtask 0.2.0) |
+| **Last completed** | T-0006 Diagnostics foundation in `terra-core` (terra 0.1.0) |
 | **In progress** | — |
-| **Next up** | T-0006 Diagnostics foundation in `terra-core` |
+| **Next up** | T-0007 Linux build prerequisites |
 | **Blocked** | — |
 | **Remote / CI** | https://github.com/apz98/terra (public) · CI: GitHub Actions runs `cargo xtask ci` on push/PR to `main`; wait on it with `cargo xtask wait-ci` |
 
@@ -16,8 +16,8 @@ _Update this file in every commit that changes progress. Keep it short._
 
 | Crate | Version |
 |---|---|
-| `terra` | 0.0.0 |
-| `terra-core` | 0.0.0 |
+| `terra` | 0.1.0 |
+| `terra-core` | 0.1.0 |
 | `terra-xtask` | 0.2.0 |
 
 `ARCHITECTURE.md` §2 is the authoritative crate table; `cargo xtask check-docs` checks both.

@@ -29,8 +29,9 @@ unless it is written here. This file is how Claude gets better across sessions.
    Unknown task IDs are caught by `check-docs` automatically (since T-0004).
 3. **`ls` output may be swallowed in this shell** (aliased). Use `command ls -A` or the
    dedicated file tools.
-4. **Verify, don't assume.** Look up crate versions on crates.io and toolchain versions
-   with `rustup check` at task time; confirm a command's output before reporting it.
+4. **Verify, don't assume.** Look up crate versions on crates.io (`curl -A terra-dev`, no
+   personal data in headers) and toolchain versions with `rustup check` at task time;
+   confirm a command's output before reporting it.
 5. **Things outside the AC need a callout.** If you make a choice the task didn't ask
    for, say so in the report and the commit message, and say how to undo it.
 6. **Look before you overwrite.** Before writing a file with `cat >`/`Write`, check that
@@ -44,6 +45,22 @@ unless it is written here. This file is how Claude gets better across sessions.
    `replace` arguments, and check the file's line count or `git diff --stat` afterwards.
 
 ## Log (newest first)
+
+### 2026-10-22 — T-0006 Diagnostics foundation
+- **What happened:** I passed Adrian's email in a `User-Agent` header when querying the
+  crates.io API. Instructions say his email goes to no unrelated service unless he
+  asks. **Cause:** copied crates.io's "include contact info" advice without thinking.
+  **Rule:** use `-A terra-dev` (no personal data) for crates.io API calls.
+- **What happened:** `tracing-subscriber` writes ANSI colour codes even when stderr is a
+  pipe or file. Only running the binary showed it; the tests passed. **Fix:**
+  `.with_ansi(io::stderr().is_terminal())`. **Rule:** WORKFLOW step 5 already says to run
+  the binary for anything user-visible. This is why.
+- **Note:** global state (subscriber, panic hook) is tested in its own `tests/*.rs` file,
+  since each one runs as a separate process. The Tracy backend of `profiling` panics on the
+  first scope unless `tracy_client::Client::start()` ran. CI builds default features only,
+  so check `cargo clippy -p terra --features profile-tracy` by hand when touching it.
+- **Note:** clippy pedantic flags `name.ends_with(".log")` in tests
+  (`case_sensitive_file_extension_comparisons`). Use `Path::extension()`.
 
 ### 2026-10-22 — T-0010 Fix `/code-review` findings on T-0009 and T-0005
 - **What happened:** a Python edit script turned `wait_ci.rs` into two nested copies of

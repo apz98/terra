@@ -7,7 +7,7 @@ with friends over LAN or the internet, built on a custom wgpu engine and optimiz
 
 > Repository: https://github.com/apz98/terra
 >
-> **Status:** M0 Foundations, workspace scaffolded (game version `0.0.0`). See
+> **Status:** M0 Foundations, workspace scaffolded (game version `0.1.0`). See
 > [`docs/STATUS.md`](docs/STATUS.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Goals
@@ -28,6 +28,7 @@ automatically on the first build.
 
 ```sh
 cargo run -p terra                 # run the game (currently prints its version)
+cargo run -p terra --features profile-tracy   # same, streaming profiling scopes to Tracy
 cargo build --workspace            # build everything
 cargo test --workspace             # run all tests
 cargo xtask ci                     # every gate: fmt, clippy, tests, rustdoc, check-docs (CI runs the same)
@@ -39,6 +40,16 @@ cargo xtask wait-ci                # after a push: wait for GitHub Actions on HE
 Dev builds optimize dependencies (`opt-level = 3`) and Terra's own code lightly
 (`opt-level = 1`) so the game stays playable. Release builds use fat LTO.
 System packages for the graphics stack are documented in T-0007 (a Vulkan-capable GPU driver is required).
+The `profile-tracy` feature also needs a C++ compiler.
+
+### Environment variables
+
+| Variable | Effect |
+|---|---|
+| `TERRA_LOG` | Log filter in [`tracing` `EnvFilter`](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) syntax, e.g. `debug` or `info,terra_core=trace`. Default `info`. Logs go to stderr. |
+
+If Terra crashes, it writes a crash report to `~/.local/share/terra/crash-reports/`
+(Linux; `%APPDATA%\Terra\data\crash-reports\` on Windows) and prints the file's path.
 
 ## Documentation
 

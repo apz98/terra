@@ -1,6 +1,6 @@
 [package]
 name = "terra"
-version = "0.0.0"
+version = "0.1.0"
 description = "Terra, a Minecraft-style voxel sandbox. This crate's version is the game version."
 edition.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,16 @@ repository.workspace = true
 authors.workspace = true
 publish.workspace = true
 
+[features]
+# Stream profiling scopes to the Tracy profiler (https://github.com/wolfpld/tracy).
+# Builds Tracy's C++ client, so it needs a C++ compiler.
+profile-tracy = ["profiling/profile-with-tracy"]
+
 [dependencies]
+anyhow.workspace = true
+profiling.workspace = true
+terra-core = { path = "../terra-core", version = "0.1.0" }
+tracing.workspace = true
 
 [lints]
 workspace = true

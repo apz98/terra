@@ -16,9 +16,15 @@ publish = false
 [workspace.dependencies]
 anyhow = "1.0.104"
 cargo_metadata = "0.23.1"
+directories = "6.0.0"
+jiff = { version = "0.2.38", default-features = false, features = ["std"] }
+profiling = "1.0.18"
 semver = "1.0.28"
 tempfile = "3.27.0"
+thiserror = "2.0.21"
 toml_edit = "0.25.17"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
