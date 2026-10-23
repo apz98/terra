@@ -13,6 +13,38 @@ Each task lists the crates it touches, its acceptance criteria (AC), and the doc
 Goal and exit criteria: `ROADMAP.md` M1. A window showing a textured 16³ section you can
 fly around, ≥ 60 fps on the reference machine, baseline numbers recorded.
 
+### T-0109 Fix `/code-review` findings on M0 (`2b2725b..bc4ab5c`) — `todo`
+Review of T-0010, T-0006, T-0007, T-0008 (2026-10-22): 8 findings, all checked against
+the code. First in M1 because finding 1 can make CI report a good `main` commit as
+`cancelled`, and findings 3–4 can make `wait-ci` report red CI that isn't red.
+- **Crates:** `terra-xtask`, `terra-core`, `terra`; also `.github/workflows/ci.yml`.
+1. **CI concurrency:** a group keeps one running and one *pending* run, and a new run
+   cancels the pending one even with `cancel-in-progress: false`. Use a per-commit group
+   on push (`ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}`)
+   and fix the comment.
+2. **Crash path always visible:** the hook prints the report path (or the write error) to
+   stderr even when logging is on, since `TERRA_LOG=off` or `terra_core=off` hides the
+   `tracing::error!`.
+3. **`wait-ci` retries transient `gh` failures:** a failed `gh run list` is retried on the
+   next poll (log it, give up after N consecutive failures) instead of ending the wait.
+4. **`wait-ci` "never appeared":** apply the `appear` limit only until a run has been seen.
+   An empty result after that is treated like finding 3 (retry), not "was it pushed?".
+5. **Gate `profile-tracy`:** `cargo xtask ci` (and so CI) runs `cargo clippy -p terra
+   --features profile-tracy -- -D warnings`. Replaces the "check by hand" note in LESSONS.
+6. **Closing fences:** a closing fence may be indented at most 3 spaces more than its
+   opening fence (CommonMark's rule, relative to the container), so an indented fence
+   line inside a code block doesn't close it.
+7. **Crash dir fallback:** don't use the shared `/tmp/terra`. Recommend (70%) creating a
+   per-user dir (`0700`, refuse one owned by someone else) or falling back to the working
+   directory; decide in-task and update the rustdoc and ARCHITECTURE §8.
+8. **`TERRA_LOG` keeps valid directives:** filter with `parse_lossy(value)`; keep the strict
+   `parse` only to produce the warning. ARCHITECTURE §8 says what an invalid value does.
+- Cleanups while there: one short-SHA helper in `wait_ci.rs` (`&sha[..10]` appears twice).
+- **AC:** a unit test per code finding (2–8; 3–4 with the injected `gh`); first CI run on the
+  new concurrency group green; `cargo xtask ci` green.
+- **Docs:** ARCHITECTURE §8, WORKFLOW step 5 (gates), LESSONS (drop the manual Tracy note),
+  CHANGELOG, STATUS.
+
 ### T-0108 License and advisory checks (`cargo-deny`) — `todo`
 First in M1 (Claude, 70%): wgpu and winit add well over a hundred crates, and ADR 0010
 says licenses are checked with `cargo-deny`. Adding the check before they arrive is cheap;

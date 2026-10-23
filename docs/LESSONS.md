@@ -48,6 +48,17 @@ unless it is written here. This file is how Claude gets better across sessions.
 
 ## Log (newest first)
 
+### 2026-10-22 — `/code-review` of M0 (`2b2725b..bc4ab5c`)
+- **What happened:** T-0010 claimed `cancel-in-progress: false` means `main` runs are never
+  cancelled. GitHub keeps one pending run per concurrency group and cancels the older
+  pending one, so a quick third push still cancels the second. **Cause:** reasoned about
+  GitHub's semantics from the option's name instead of its documentation. **Rule:** 4
+  covers it: for CI/platform behaviour, read the docs before writing a comment that
+  promises something.
+- **What happened:** T-0006 left "check `--features profile-tracy` by hand" as a LESSONS
+  note; nothing gates it. **Cause:** a manual note where a gate was cheap. **Fix:** T-0109
+  adds it to `cargo xtask ci`. A "check by hand" note is a missing gate.
+
 ### 2026-10-22 — T-0008 M0 wrap-up
 - **What happened:** three shell commands failed on zsh quirks: `echo =====` (zsh expands
   `=word` to a command path), an unquoted `--include=*.md` (unmatched glob is an error),
