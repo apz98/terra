@@ -110,12 +110,14 @@ of T-0006 because two of them can make CI report red on a good commit.
 - **AC:** tests for log init idempotence; a forced panic in a test writes a crash file.
 - **Docs:** ARCHITECTURE §8, README (env vars).
 
-### T-0007 Linux build prerequisites — `todo`
+### T-0007 Linux build prerequisites — `done (no bump)`
 - Document system packages for wgpu/winit on Arch (vulkan-icd-loader, mesa/vulkan-intel,
   wayland, libxkbcommon, …) and Ubuntu (for CI and friends). Optional: `mold` for faster linking.
 - **AC:** README "Building on Linux" section; CI installs the same Ubuntu packages.
 - Note: `ubuntu-latest` is migrating to Ubuntu 26 (from 2026-10-19). Check package names
   on the image CI actually uses, or pin `ubuntu-24.04` and say why.
+- **Done:** the Ubuntu list lives in `.github/ubuntu-packages.txt` (CI installs it, README
+  links it); CI pinned to `ubuntu-24.04`. `mold` skipped: Rust already links with `rust-lld`.
 
 ### T-0008 M0 wrap-up — `todo`
 - Verify M0 exit criteria; archive M0 tasks; expand M1 tasks; remind Adrian to run `/code-review`.

@@ -1,0 +1,32 @@
+# System packages for building and running Terra on Ubuntu 24.04 (noble).
+# CI installs exactly this list (.github/workflows/ci.yml); README "Building on Linux"
+# points friends here. One package per line; `#` starts a comment.
+#
+# winit and wgpu load every graphics library at runtime (dlopen), so only the first
+# group is needed to *build*. The rest is needed to *run*, and a desktop install
+# already has most of it.
+
+# Build: C toolchain for build scripts and the linker driver, pkg-config for -sys crates.
+build-essential
+pkg-config
+
+# Graphics: the Vulkan loader, and Mesa's Vulkan drivers (Intel, AMD, and the lavapipe
+# software renderer that CI uses). NVIDIA users install the proprietary driver instead.
+libvulkan1
+mesa-vulkan-drivers
+# EGL, for wgpu's OpenGL ES fallback.
+libegl1
+
+# Windowing and keyboard: Wayland, X11 and xkbcommon, loaded by winit.
+libwayland-client0
+libxkbcommon0
+libxkbcommon-x11-0
+libx11-6
+libx11-xcb1
+libxcb1
+libxcursor1
+libxrandr2
+libxi6
+
+# Diagnostics: `vulkaninfo --summary` shows which GPUs Vulkan can see.
+vulkan-tools

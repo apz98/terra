@@ -6,11 +6,11 @@ _Update this file in every commit that changes progress. Keep it short._
 |---|---|
 | **Game version** (`terra`) | 0.1.0 (tag `v0.1.0`) |
 | **Milestone** | M0 — Foundations |
-| **Last completed** | T-0006 Diagnostics foundation in `terra-core` (terra 0.1.0) |
+| **Last completed** | T-0007 Linux build prerequisites (no bump) |
 | **In progress** | — |
-| **Next up** | T-0007 Linux build prerequisites |
+| **Next up** | T-0008 M0 wrap-up |
 | **Blocked** | — |
-| **Remote / CI** | https://github.com/apz98/terra (public) · CI: GitHub Actions runs `cargo xtask ci` on push/PR to `main`; wait on it with `cargo xtask wait-ci` |
+| **Remote / CI** | https://github.com/apz98/terra (public) · CI: GitHub Actions (`ubuntu-24.04`) runs `cargo xtask ci` on push/PR to `main`; wait on it with `cargo xtask wait-ci` |
 
 ## Crate versions
 

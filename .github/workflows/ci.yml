@@ -23,11 +23,20 @@ env:
 jobs:
   ci:
     name: cargo xtask ci
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest, which is moving to 26.04: the package list below is
+    # checked against 24.04, so the image changes only in a commit that rechecks it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       # Actions are pinned by commit SHA; the comment names the release.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The Ubuntu packages from README "Building on Linux". `vulkaninfo` proves Vulkan works
+      # here (lavapipe, a software renderer), which GPU tests will rely on later.
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sed 's/#.*//' .github/ubuntu-packages.txt | xargs sudo apt-get install -y --no-install-recommends
+          vulkaninfo --summary
       # Installs the toolchain and components pinned in rust-toolchain.toml.
       - name: Install toolchain
         run: rustup toolchain install && rustc --version

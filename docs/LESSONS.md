@@ -46,6 +46,21 @@ unless it is written here. This file is how Claude gets better across sessions.
 
 ## Log (newest first)
 
+### 2026-10-22 — T-0007 Linux build prerequisites
+- **What happened:** checking 16 package names on packages.ubuntu.com took more than 3
+  minutes and never finished. The Docker daemon wasn't running, so a container test
+  wasn't possible either (starting it needs sudo). **Fix:** grep the archive's own index,
+  `http://archive.ubuntu.com/ubuntu/dists/<release>/{main,universe}/binary-amd64/Packages.xz`
+  (~16 MB, seconds). **Rule:** verify Ubuntu package names against `Packages.xz`, not
+  the packages website.
+- **Note:** winit and wgpu `dlopen` every system library (x11-dl, x11rb `dl-libxcb`,
+  xkbcommon-dl, `wayland-dlopen`, ash `libvulkan.so`, EGL `dynamic`), so building needs
+  only a C toolchain and pkg-config. Audio (`cpal`/ALSA) will be the first real build-time
+  system dependency. Add it to `.github/ubuntu-packages.txt` and README then.
+- **Note:** Rust 1.99 already links with `rust-lld` on x86-64 Linux
+  (`cargo rustc -p terra -- --print link-args` shows `-fuse-ld=lld`), so `mold` would add
+  little. Measure before adding it.
+
 ### 2026-10-22 — T-0006 Diagnostics foundation
 - **What happened:** I passed Adrian's email in a `User-Agent` header when querying the
   crates.io API. Instructions say his email goes to no unrelated service unless he

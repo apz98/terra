@@ -39,8 +39,39 @@ cargo xtask wait-ci                # after a push: wait for GitHub Actions on HE
 
 Dev builds optimize dependencies (`opt-level = 3`) and Terra's own code lightly
 (`opt-level = 1`) so the game stays playable. Release builds use fat LTO.
-System packages for the graphics stack are documented in T-0007 (a Vulkan-capable GPU driver is required).
 The `profile-tracy` feature also needs a C++ compiler.
+
+### Building on Linux
+
+Terra renders with Vulkan, so you need a GPU driver with Vulkan support. The windowing
+and graphics libraries are loaded when the game starts, not linked at build time. That
+means building only needs a C toolchain and `pkg-config`; the rest is needed to run it.
+
+**Arch Linux** (and Arch-based distros such as Omarchy):
+
+```sh
+sudo pacman -S --needed base-devel pkgconf vulkan-icd-loader \
+    wayland libxkbcommon libxkbcommon-x11 libx11 libxcursor libxrandr libxi vulkan-tools
+# plus the Vulkan driver for your GPU, one of:
+sudo pacman -S --needed vulkan-intel     # Intel
+sudo pacman -S --needed vulkan-radeon    # AMD
+sudo pacman -S --needed nvidia-utils     # NVIDIA (proprietary driver)
+```
+
+**Ubuntu 24.04 / Debian-based:** the list lives in
+[`.github/ubuntu-packages.txt`](.github/ubuntu-packages.txt), with a comment per group.
+CI installs exactly that file, so it can't go stale:
+
+```sh
+sed 's/#.*//' .github/ubuntu-packages.txt | xargs sudo apt-get install -y --no-install-recommends
+```
+
+**Check Vulkan:** `vulkaninfo --summary` should list your GPU under `Devices:`. If it
+lists only `llvmpipe`, Vulkan found no hardware driver and Terra will run on the CPU
+(very slowly).
+
+**Linking:** Rust already links with its bundled `rust-lld` on x86-64 Linux, which is
+fast. `mold` isn't needed for now.
 
 ### Environment variables
 
