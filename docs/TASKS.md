@@ -46,8 +46,6 @@ Interview, vision, architecture, roadmap, tasks, workflow, versioning, ADRs, `/n
 - **Docs:** VERSIONING (mechanics), WORKFLOW (commands), ARCHITECTURE.
 
 ### T-0005 CI on GitHub Actions — `todo`
-- **Needs Adrian:** the `gh` token lacks the `workflow` scope, which pushing
-  `.github/workflows/*` over HTTPS requires → run `! gh auth refresh -h github.com -s workflow`.
 - `.github/workflows/ci.yml`: ubuntu-latest, toolchain from `rust-toolchain.toml`,
   `Swatinem/rust-cache`, run `cargo xtask ci`. Trigger on push and PR to `main`.
 - **AC:** green run on GitHub; README CI badge.

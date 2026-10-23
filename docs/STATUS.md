@@ -9,7 +9,7 @@ _Update this file in every commit that changes progress. Keep it short._
 | **Last completed** | T-0002 Publish to GitHub |
 | **In progress** | — |
 | **Next up** | T-0003 Workspace scaffold |
-| **Blocked** | T-0005 CI needs `gh auth refresh -s workflow` from Adrian |
+| **Blocked** | — |
 | **Remote / CI** | https://github.com/apz98/terra (public) · no CI yet |
 
 ## Crate versions
