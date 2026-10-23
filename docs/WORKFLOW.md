@@ -15,12 +15,14 @@ This is the loop for every task. `/next` enters it; nothing else should.
    are fine; avoid GPL in shipped crates) and maintenance status.
 4. **Implement** in small steps. Tests alongside code. Hot path? Add/extend a
    criterion benchmark and record numbers in `PERFORMANCE.md`.
-5. **Verify.** `cargo xtask ci` (until it exists: fmt + clippy `-D warnings` +
-   test). For anything visual or interactive, run the game and describe what you
-   saw. If you can't verify something, say so; never claim it works untested.
+5. **Verify.** `cargo xtask ci` (fmt, clippy `-D warnings`, tests, rustdoc
+   `-D warnings`, `check-docs`; stops at the first failure). For anything visual
+   or interactive, run the game and describe what you saw. If you can't verify something, say so; never claim it works untested.
 6. **Sync docs** using the matrix below. Rustdoc for every public item you added.
-7. **Version.** Determine bumps per `VERSIONING.md` (`cargo xtask bump` once it
-   exists), update `CHANGELOG.md`.
+7. **Version.** Determine the level per changed crate (`VERSIONING.md`), then run
+   **one** `cargo xtask bump <crate> <level> [<crate> <level> …]` naming every changed
+   crate (try `--dry-run` first). Copy its `Bumps:` line into the commit message and
+   update `CHANGELOG.md`, the crate tables and STATUS; `check-docs` catches misses.
 8. **Retro.** Did anything fail, surprise you, or get corrected by Adrian during this
    task? Log it in `docs/LESSONS.md` (what happened, cause, rule) and promote it to a
    rule, a doc change, or an automated check. Goes in the same commit.

@@ -42,8 +42,19 @@ Internal tool crates (`terra-xtask`) follow the same rules but never cascade.
 
 - Versions live in each crate's own `Cargo.toml` (no `version.workspace`).
 - Internal deps use `path` plus a `version` requirement; `cargo xtask bump` keeps them in sync.
-- `cargo xtask bump <crate> <major|minor|patch>` updates the crate, cascades, and prints
-  the bump list for the commit message (built in M0, T-0004).
+- `cargo xtask bump <crate> <major|minor|patch> [<crate> <level> …] [--dry-run]`:
+  - bumps each named crate, then cascades to every crate that ships it through
+    `[dependencies]` or `[build-dependencies]` (including `[target.*]` tables and renamed
+    deps). `[dev-dependencies]` don't ship, so they don't cascade, but their requirements
+    are still updated.
+  - **Name every crate a commit changes in one call.** The highest level per crate wins
+    and each crate bumps once. Two separate `minor` calls would bump `terra` twice.
+  - `terra-xtask` is never bumped by a cascade and never cascades.
+  - rewrites the manifests with `toml_edit` (comments and layout survive), runs
+    `cargo update --workspace` so `Cargo.lock` matches, and prints the `Bumps:` line
+    for the commit message. `--dry-run` only prints.
+- `cargo xtask check-docs` fails if a crate table (ARCHITECTURE, STATUS), the CHANGELOG
+  heading, or the STATUS game version disagrees with the `Cargo.toml` versions.
 - **Tags:** only the game version is tagged: `v<terra version>` on the commit that
   set it. The tag is annotated with the crate bump list.
 - **1.0.0** is a manual decision at the end of the Friends Release milestone (M11).

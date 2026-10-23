@@ -32,7 +32,7 @@ Interview, vision, architecture, roadmap, tasks, workflow, versioning, ADRs, `/n
 - **AC:** `cargo build --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` are clean; `cargo run -p terra` prints `Terra 0.0.0`.
 - **Docs:** ARCHITECTURE crate table (versions + status), README build section.
 
-### T-0004 xtask: `bump`, `check-docs`, `ci` — `todo`
+### T-0004 xtask: `bump`, `check-docs`, `ci` — `done (terra-xtask 0.1.0)`
 - **Crates:** `terra-xtask`.
 - `bump <crate> <major|minor|patch>`: edits the crate version, updates internal dependency
   requirements, cascades to dependents per VERSIONING.md (highest level wins,

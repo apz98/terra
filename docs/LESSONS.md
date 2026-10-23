@@ -22,27 +22,40 @@ unless it is written here. This file is how Claude gets better across sessions.
 
 ## Rules (read every session)
 
-1. **Format before checking.** Run `cargo fmt` after writing code, then the gates
-   (`cargo fmt --check`, clippy, tests). Don't hand-wrap lines and hope.
-2. **Grep for stale references when finishing a task.** Search docs for the task ID and
-   anything renamed or moved (`grep -rn "T-0004" docs/ README.md CLAUDE.md`). Plans written
-   early often name the wrong task or an old name.
+1. **Format before checking.** Run `cargo fmt` after writing code, then `cargo xtask ci`.
+   Don't hand-wrap lines and hope.
+2. **Grep for stale references when finishing a task.** Search docs for anything renamed
+   or moved, and for "once it exists"/"arrives in" notes about what you just built.
+   Unknown task IDs are caught by `check-docs` automatically (since T-0004).
 3. **`ls` output may be swallowed in this shell** (aliased). Use `command ls -A` or the
    dedicated file tools.
 4. **Verify, don't assume.** Look up crate versions on crates.io and toolchain versions
    with `rustup check` at task time; confirm a command's output before reporting it.
 5. **Things outside the AC need a callout.** If you make a choice the task didn't ask
    for, say so in the report and the commit message, and say how to undo it.
+6. **Look before you overwrite.** Before writing a file with `cat >`/`Write`, check that
+   it doesn't exist (`git ls-files <path>`, Read). If it does, edit it instead.
 
 ## Log (newest first)
+
+### 2026-10-22 — T-0004 xtask `bump`, `check-docs`, `ci`
+- **What happened:** I created `clippy.toml` with a heredoc and overwrote an existing
+  one, dropping `allow-expect-in-tests` and `allow-dbg-in-tests`. `git status` showed it
+  as `M` rather than `??`, and it was restored before committing. **Cause:** assumed the
+  file didn't exist because T-0003's notes didn't mention it. **Rule:** 6.
+- **Automated:** the 2026-10-22 T-0003 entry's task-ID drift is now checked by
+  `check-docs` (IDs outside fenced code blocks must be defined in TASKS.md or the
+  archive). Rule 2 was narrowed to match.
+- **Note:** clippy pedantic rejects `format!` collected into a `String` (`format_collect`)
+  and `push_str(&format!(…))` (`format_push_string`). Use `writeln!(s, …)` with
+  `std::fmt::Write`.
 
 ### 2026-10-22 — T-0003 Workspace scaffold
 - **What happened:** `cargo fmt --check` failed on a long `const` line I wrote by hand.
   **Cause:** ran the check before `cargo fmt`. **Rule:** 1.
 - **What happened:** `docs/VERSIONING.md` said `xtask bump` is built in T-0003; it's T-0004.
   **Cause:** the baseline docs were written before the task list was final, and nobody
-  cross-checked. **Rule:** 2. (Candidate for automation in `check-docs`: task IDs
-  mentioned in docs must exist in TASKS.md or the archive.)
+  cross-checked. **Rule:** 2. (Automated in T-0004: `check-docs` verifies task IDs.)
 - **What happened:** a plain `ls -la` printed nothing. **Cause:** shell alias. **Rule:** 3.
 - **What happened:** I set dev `opt-level = 1` for Terra's own code, which the task didn't
   specify. Fine, but it needed flagging. **Rule:** 5.

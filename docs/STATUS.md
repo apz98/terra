@@ -6,9 +6,9 @@ _Update this file in every commit that changes progress. Keep it short._
 |---|---|
 | **Game version** (`terra`) | 0.0.0 (docs baseline, tag `v0.0.0`) |
 | **Milestone** | M0 — Foundations |
-| **Last completed** | T-0003 Workspace scaffold |
+| **Last completed** | T-0004 xtask: `bump`, `check-docs`, `ci` (terra-xtask 0.1.0) |
 | **In progress** | — |
-| **Next up** | T-0004 xtask: `bump`, `check-docs`, `ci` |
+| **Next up** | T-0005 CI on GitHub Actions |
 | **Blocked** | — |
 | **Remote / CI** | https://github.com/apz98/terra (public) · no CI yet |
 
@@ -18,9 +18,9 @@ _Update this file in every commit that changes progress. Keep it short._
 |---|---|
 | `terra` | 0.0.0 |
 | `terra-core` | 0.0.0 |
-| `terra-xtask` | 0.0.0 |
+| `terra-xtask` | 0.1.0 |
 
-`ARCHITECTURE.md` §2 is the authoritative crate table.
+`ARCHITECTURE.md` §2 is the authoritative crate table; `cargo xtask check-docs` checks both.
 
 ## Reviews
 

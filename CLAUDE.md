@@ -30,13 +30,13 @@ and never let docs drift from code.
    Purely technical choices you may make yourself → write an ADR (`docs/adr/`).
 4. **Docs stay in sync, in the same commit.** Any code change that affects
    behaviour, structure, versions, or plans updates the matching docs (see the
-   sync matrix in `docs/WORKFLOW.md`). `cargo xtask check-docs` must pass (once it exists).
+   sync matrix in `docs/WORKFLOW.md`). `cargo xtask check-docs` must pass.
 5. **Version every commit appropriately** per `docs/VERSIONING.md`: per-crate
    SemVer driven by Conventional Commits; the `terra` crate version **is the game
    version**. Bump in the same commit; update `CHANGELOG.md`.
 6. **Quality gates before every commit:** `cargo fmt --check`, `cargo clippy
    --workspace --all-targets -- -D warnings`, `cargo test --workspace`, and
-   `cargo xtask check-docs` (one command once it exists: `cargo xtask ci`). Never commit red.
+   `cargo xtask check-docs`, all in one command: `cargo xtask ci`. Never commit red.
 7. **Commit + push.** Conventional Commit messages; one task ≈ one commit (split if
    large). Push to `origin main` and check CI (`gh run list -L 1`). Fix red CI first.
 8. **Learn across `/clear`.** Context is wiped often. Whenever something goes wrong or

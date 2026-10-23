@@ -28,8 +28,9 @@ automatically on the first build.
 cargo run -p terra                 # run the game (currently prints its version)
 cargo build --workspace            # build everything
 cargo test --workspace             # run all tests
-cargo clippy --workspace --all-targets -- -D warnings
-cargo xtask                        # project automation (commands arrive in T-0004)
+cargo xtask ci                     # every gate: fmt, clippy, tests, rustdoc, check-docs
+cargo xtask check-docs             # docs agree with the code (versions, tasks, changelog)
+cargo xtask bump terra-core minor --dry-run   # version bump with cascade (docs/VERSIONING.md)
 ```
 
 Dev builds optimize dependencies (`opt-level = 3`) and Terra's own code lightly
